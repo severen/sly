@@ -16,7 +16,7 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module Parser (Name (..), Term (..), Statement (..), program, term) where
+module Parser (Name (..), Term (..), Statement (..), program) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Functor (void)
@@ -73,7 +73,7 @@ data Term
   = -- | A variable.
     Var Name
   | -- | A λ-abstraction.
-    Abs [Name] Term
+    Abs Name Term
   | -- | An application of a λ-abstraction.
     App Term Term
   deriving (Eq, Show)
@@ -134,7 +134,14 @@ abstraction = do
   punc "->" <|> punc "↦"
   body <- term
 
-  return $ Abs head' body
+  return $ desugar head' body
+ where
+  -- TODO: Figure out whether I can rewrite this as some kind of fold or not.
+  -- Expand an abstraction with multiple variables into its internal representation of
+  -- nested single-variable abstractions.
+  desugar [] _ = error "Unreachable case" -- The parser should fail before this case.
+  desugar [v] body = Abs v body
+  desugar (v : vs) body = Abs v (desugar vs body)
 
 -- | Parser for an application term.
 application :: Parser (Term -> Term -> Term)
