@@ -1,0 +1,47 @@
+cabal-version: 3.0
+
+name: sly
+version: 0.1.0
+synopsis: An interpreter for the pure untyped λ-calculus.
+-- A longer description of the package.
+-- description:
+author: Severen Redwood
+maintainer: severen@shrike.me
+
+license: GPL-3.0-or-later
+license-file: LICENSE
+copyright: (c) 2022 Severen Redwood
+
+homepage: https://github.com/severen/sly
+bug-reports: https://github.com/severen/sly/issues
+
+extra-source-files: CHANGELOG.md
+
+executable sly
+  hs-source-dirs: src
+
+  main-is: Main.hs
+  other-modules: Parser
+
+  ghc-options: -W -Wall
+  default-language: GHC2021
+  default-extensions:
+    BlockArguments,
+    DuplicateRecordFields,
+    LambdaCase,
+    LexicalNegation,
+    NoFieldSelectors,
+    OverloadedRecordDot,
+    OverloadedStrings,
+    RecordWildCards,
+    UnicodeSyntax,
+
+  build-depends:
+    base ^>=4.16.0.0,
+    bytestring ^>=0.11.3.1,
+    containers ^>=0.6.6,
+    vector ^>=0.13.0.0,
+    text ^>=2.0.1,
+    unicode-data ^>=0.3.0,
+    megaparsec ^>=9.2.1,
+    parser-combinators >=1.3.0,
