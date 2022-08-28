@@ -18,10 +18,12 @@
 
 module Main (main) where
 
+import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
+import System.Console.Haskeline
 import System.Environment
-import Text.Megaparsec (errorBundlePretty, parse)
+import Text.Megaparsec (errorBundlePretty)
 
 import Parser
 
@@ -33,11 +35,14 @@ main = do
   progName <- getProgName
   args <- getArgs
   case args of
+    [] -> repl
     ["--help"] -> putStrLn (help progName)
-    [filename] -> parseProgram filename
+    [filename] -> do
+      -- NOTE: Program files are strictly considered to have a UTF-8 encoding.
+      program <- decodeUtf8 <$> BS.readFile filename
+      runProgram filename program
     _ -> putStrLn "Error: unexpected argument"
 
--- | Given the program name, format a help string.
 help :: String -> String
 help progName =
   "Usage: " <> progName <> " [options] [filename]\n\n"
@@ -45,13 +50,25 @@ help progName =
     <> "Options:\n"
     <> "--help  Show this message and exit."
 
--- TODO: Actually evaluate the program!
-parseProgram :: Text -> IO ()
-parseProgram filename = do
-  let filename' = T.unpack filename
-  -- NOTE: Program files are strictly considered to have a UTF-8 encoding.
-  file <- decodeUtf8 <$> BS.readFile filename'
+repl :: IO ()
+repl = do
+  putStrLn "Welcome to sly v0.1.0!\nType :quit or press C-d to exit."
+  runInputT defaultSettings loop
+ where
+  loop :: InputT IO ()
+  loop = do
+    minput <- getInputLine "~> "
+    case minput of
+      Nothing -> return ()
+      Just ":q" -> return ()
+      Just ":quit" -> return ()
+      Just input -> do
+        liftIO $ runProgram "<anonymous>" (T.pack input)
+        loop
 
-  case parse program filename' file of
+-- TODO: Actually evaluate the program!
+runProgram :: FilePath -> Text -> IO ()
+runProgram filename programFile = do
+  case parse filename programFile of
     Left bundle -> putStr (errorBundlePretty bundle)
-    Right ast -> mapM_ print ast
+    Right statements -> mapM_ print statements

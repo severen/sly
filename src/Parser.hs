@@ -16,14 +16,14 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module Parser (Name (..), Term (..), Statement (..), program) where
+module Parser (Name (..), Term (..), Statement (..), parse) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Foldable (foldr')
 import Data.Functor (void)
 import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec hiding (Token)
+import Text.Megaparsec hiding (Token, parse)
 import Unicode.Char.Identifiers (isPatternWhitespace, isXIDContinue, isXIDStart)
 
 import qualified Data.Text as T
@@ -181,3 +181,7 @@ eos = punc "."
 -}
 program :: Parser [Statement]
 program = spaceConsumer *> statement `endBy` eos <* eof
+
+-- | Parse a sly program.
+parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Statement]
+parse filename programFile = runParser program filename programFile
