@@ -19,6 +19,7 @@
 module Parser (Name (..), Term (..), Statement (..), program) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
+import Data.Foldable (foldr')
 import Data.Functor (void)
 import Data.Text (Text)
 import Data.Void (Void)
@@ -136,12 +137,9 @@ abstraction = do
 
   return $ desugar head' body
  where
-  -- TODO: Figure out whether I can rewrite this as some kind of fold or not.
   -- Expand an abstraction with multiple variables into its internal representation of
   -- nested single-variable abstractions.
-  desugar [] _ = error "Unreachable case" -- The parser should fail before this case.
-  desugar [v] body = Abs v body
-  desugar (v : vs) body = Abs v (desugar vs body)
+  desugar = flip $ foldr' Abs
 
 -- | Parser for an application term.
 application :: Parser (Term -> Term -> Term)
