@@ -27,19 +27,23 @@ import Parser
 
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 
 main :: IO ()
 main = do
-  progName <- T.pack <$> getProgName
-  args <- fmap T.pack <$> getArgs
+  progName <- getProgName
+  args <- getArgs
   case args of
-    [] -> TIO.putStrLn $ usage progName
+    ["--help"] -> putStrLn (help progName)
     [filename] -> parseProgram filename
-    _ -> TIO.putStrLn "Error: unexpected argument"
+    _ -> putStrLn "Error: unexpected argument"
 
-usage :: Text -> Text
-usage progName = "Usage: " <> progName <> " [filename]"
+-- | Given the program name, format a help string.
+help :: String -> String
+help progName =
+  "Usage: " <> progName <> " [options] [filename]\n\n"
+    <> "Interpreter for the pure untyped λ-calculus.\n\n"
+    <> "Options:\n"
+    <> "--help  Show this message and exit."
 
 -- TODO: Actually evaluate the program!
 parseProgram :: Text -> IO ()
