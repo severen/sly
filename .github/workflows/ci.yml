@@ -1,0 +1,38 @@
+# Adapted from https://markkarpov.com/post/github-actions-for-haskell-ci.html.
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - synchronize
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cabal: ["3.8.1.0"]
+        # TODO: Add a third version older than the others once the GHC2021 language set
+        # is available in the third oldest GHC version.
+        ghc: ["9.2.4", "9.4.2"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
+        id: setup-haskell-cabal
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+      - run: cabal update
+      - run: cabal freeze
+      - uses: actions/cache@v3.0.7
+        with:
+          path: |
+            ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ runner.os }}-${{ matrix.ghc }}-0-${{ hashFiles('cabal.project.freeze') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ghc }}-0-
+      - run: cabal build
+      - run: cabal sdist
