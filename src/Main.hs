@@ -18,16 +18,13 @@
 
 module Main (main) where
 
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict (StateT, evalStateT, get, put)
 import Control.Monad.Trans.Class (lift)
-import Data.Text (Text)
 import System.Console.Haskeline
 import System.Environment
 import Text.Megaparsec (errorBundlePretty)
 
 import Eval
-import Parser
 
 import qualified Data.Text as T
 
@@ -67,9 +64,8 @@ repl = do
         | otherwise -> do
           context <- lift get
           case stringToContext (T.pack input) of
-            Left bundle -> liftIO $ putStr (errorBundlePretty bundle)
+            Left bundle -> outputStr (errorBundlePretty bundle)
             Right lineContext -> do
               lift $ put context{terms = lineContext.terms}
-              liftIO $ mapM_ print lineContext.terms
+              mapM_ (outputStrLn . show) lineContext.terms
           loop
-
