@@ -65,7 +65,11 @@ data Statement
     Term Term
   | -- | An assignment of a name to a λ-term.
     Ass Name Term
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Statement where
+  show (Term t) = show t <> "."
+  show (Ass (Name n) t) = T.unpack $ "let " <> n <> " := " <> T.pack (show t) <> "."
 
 -- | A λ-term.
 data Term
@@ -75,7 +79,14 @@ data Term
     Abs Name Term
   | -- | An application of a λ-abstraction.
     App Term Term
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Term where
+  show = T.unpack . go
+   where
+    go (Var (Name n)) = n
+    go (Abs (Name n) t) = "(λ" <> n <> " -> " <> go t <> ")"
+    go (App l r) = "(" <> go l <> " " <> go r <> ")"
 
 -- | Parse and discard one or more whitespace characters.
 space1 :: Parser ()
