@@ -16,11 +16,11 @@ homepage: https://github.com/severen/sly
 bug-reports: https://github.com/severen/sly/issues
 tested-with: ghc ==9.2.4 ghc ==9.4.2
 
+extra-source-files: CHANGELOG.md
+
 source-repository head
   type: git
   location: https://github.com/severen/sly.git
-
-extra-source-files: CHANGELOG.md
 
 executable sly
   hs-source-dirs: src
