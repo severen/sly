@@ -35,3 +35,11 @@ jobs:
             ${{ runner.os }}-${{ matrix.ghc }}-0-
       - run: cabal build
       - run: cabal sdist
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sdist
+          path: dist-newstyle/sdist/sly-*.tar.gz
+      - uses: actions/upload-artifact@v3
+        with:
+          name: binary
+          path: dist-newstyle/build/**/sly/build/sly/sly
