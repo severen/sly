@@ -29,8 +29,6 @@ import Unicode.Char.Identifiers (isPatternWhitespace, isXIDContinue, isXIDStart)
 import qualified Data.Text as T
 import qualified Text.Megaparsec.Char.Lexer as L
 
--- TODO: StateT TopLevelDefs (InputT IO) for REPL and use haskeline.
-
 {- Grammar Notes
   * Application is parsed with the highest precedence and associativity to the left, i.e.
     f x y = ((f x) y).
@@ -59,7 +57,7 @@ type Parser = Parsec Void Text
  A name is an identifier that is either used as a variable or an identifier to which an
  arbitrary term is bound.
 -}
-newtype Name = Name Text deriving (Eq, Show)
+newtype Name = Name Text deriving (Eq, Ord, Show)
 
 -- | A program statement.
 data Statement
@@ -182,6 +180,6 @@ eos = punc "."
 program :: Parser [Statement]
 program = spaceConsumer *> statement `endBy` eos <* eof
 
--- | Parse a sly program.
+-- | Parse a sly program given a filename and a program string.
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Statement]
-parse filename programFile = runParser program filename programFile
+parse = runParser program

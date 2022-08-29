@@ -19,15 +19,16 @@
 module Main (main) where
 
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State.Strict (StateT, evalStateT, get, put)
+import Control.Monad.Trans.Class (lift)
 import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8)
 import System.Console.Haskeline
 import System.Environment
 import Text.Megaparsec (errorBundlePretty)
 
+import Eval
 import Parser
 
-import qualified Data.ByteString as BS
 import qualified Data.Text as T
 
 main :: IO ()
@@ -37,10 +38,11 @@ main = do
   case args of
     [] -> repl
     ["--help"] -> putStrLn (help progName)
-    [filename] -> do
-      -- NOTE: Program files are strictly considered to have a UTF-8 encoding.
-      program <- decodeUtf8 <$> BS.readFile filename
-      runProgram filename program
+    [path] -> do
+      result <- fileToContext path
+      case result of
+        Left bundle -> putStr (errorBundlePretty bundle)
+        Right context -> mapM_ print context.terms
     _ -> putStrLn "Error: unexpected argument"
 
 help :: String -> String
@@ -53,22 +55,21 @@ help progName =
 repl :: IO ()
 repl = do
   putStrLn "Welcome to sly v0.1.0!\nType :quit or press C-d to exit."
-  runInputT defaultSettings loop
+  evalStateT (runInputT defaultSettings loop) emptyContext
  where
-  loop :: InputT IO ()
+  loop :: InputT (StateT Context IO) ()
   loop = do
     minput <- getInputLine "~> "
     case minput of
       Nothing -> return ()
-      Just ":q" -> return ()
-      Just ":quit" -> return ()
-      Just input -> do
-        liftIO $ runProgram "<anonymous>" (T.pack input)
-        loop
+      Just input
+        | input == ":q" || input == ":quit" -> return ()
+        | otherwise -> do
+          context <- lift get
+          case stringToContext (T.pack input) of
+            Left bundle -> liftIO $ putStr (errorBundlePretty bundle)
+            Right lineContext -> do
+              lift $ put context{terms = lineContext.terms}
+              liftIO $ mapM_ print lineContext.terms
+          loop
 
--- TODO: Actually evaluate the program!
-runProgram :: FilePath -> Text -> IO ()
-runProgram filename programFile = do
-  case parse filename programFile of
-    Left bundle -> putStr (errorBundlePretty bundle)
-    Right statements -> mapM_ print statements

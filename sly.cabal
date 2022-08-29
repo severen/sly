@@ -21,7 +21,7 @@ executable sly
   hs-source-dirs: src
 
   main-is: Main.hs
-  other-modules: Parser
+  other-modules: Parser Eval
 
   ghc-options: -W -Wall
   default-language: GHC2021
@@ -42,6 +42,7 @@ executable sly
     containers ^>=0.6.6,
     vector ^>=0.13.0.0,
     text ^>=2.0.1,
+    mtl ^>=2.2.2,
     transformers ^>=0.5.6.2,
     unicode-data ^>=0.3.0,
     megaparsec ^>=9.2.1,
