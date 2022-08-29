@@ -14,9 +14,8 @@ jobs:
     strategy:
       matrix:
         cabal: ["3.8.1.0"]
-        # TODO: Add a third version older than the others once the GHC2021 language set
-        # is available in the third oldest GHC version.
-        ghc: ["9.2.4", "9.4.2"]
+        # TODO: Add 9.4.2 once composewell/unicode-data#78 is merged.
+        ghc: ["9.2.4"]
     steps:
       - uses: actions/checkout@v3
       - uses: haskell/actions/setup@v2
