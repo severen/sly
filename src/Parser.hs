@@ -64,7 +64,7 @@ data Statement
   = -- | A λ-term.
     Term Term
   | -- | An assignment of a name to a λ-term.
-    Ass Name Term
+    Ass {-# UNPACK #-} !Name Term
   deriving (Eq)
 
 instance Show Statement where
@@ -74,9 +74,9 @@ instance Show Statement where
 -- | A λ-term.
 data Term
   = -- | A variable.
-    Var Name
+    Var {-# UNPACK #-} !Name
   | -- | A λ-abstraction.
-    Abs Name Term
+    Abs {-# UNPACK #-} !Name Term
   | -- | An application of a λ-abstraction.
     App Term Term
   deriving (Eq)

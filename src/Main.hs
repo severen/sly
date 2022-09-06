@@ -18,15 +18,24 @@
 
 module Main (main) where
 
-import Control.Monad.State.Strict (StateT, evalStateT, get, put)
+import Control.Monad (unless)
+import Control.Monad.State.Strict (StateT, evalStateT, get, modify)
 import Control.Monad.Trans.Class (lift)
+import Data.List (isPrefixOf, stripPrefix)
 import System.Console.Haskeline
 import System.Environment
 import Text.Megaparsec (errorBundlePretty)
 
 import Eval
 
+import qualified Data.Map as Map
 import qualified Data.Text as T
+
+-- NOTE: This should not conflict with valid program syntax.
+
+-- | The prefix used for REPL commands.
+commandPrefix :: String
+commandPrefix = ":"
 
 main :: IO ()
 main = do
@@ -36,10 +45,10 @@ main = do
     [] -> repl
     ["--help"] -> putStrLn (help progName)
     [path] -> do
-      result <- fileToContext path
+      result <- fileToProgram path
       case result of
         Left bundle -> putStr (errorBundlePretty bundle)
-        Right context -> mapM_ print context.terms
+        Right program -> mapM_ print (runProgram program)
     _ -> putStrLn "Error: unexpected argument"
 
 help :: String -> String
@@ -52,20 +61,50 @@ help progName =
 repl :: IO ()
 repl = do
   putStrLn "Welcome to sly v0.1.0!\nType :quit or press C-d to exit."
-  evalStateT (runInputT defaultSettings loop) emptyContext
+  evalStateT (runInputT defaultSettings loop) Map.empty
  where
-  loop :: InputT (StateT Context IO) ()
+  loop :: InputT (StateT Bindings IO) ()
   loop = do
     minput <- getInputLine "~> "
     case minput of
       Nothing -> return ()
       Just input
-        | input == ":q" || input == ":quit" -> return ()
+        | commandPrefix `isPrefixOf` input -> do
+          shouldQuit <- runCommand (tail input)
+          unless shouldQuit loop
         | otherwise -> do
-          context <- lift get
-          case stringToContext (T.pack input) of
+          case stringToProgram (T.pack input) of
             Left bundle -> outputStr (errorBundlePretty bundle)
-            Right lineContext -> do
-              lift $ put context{terms = lineContext.terms}
-              mapM_ (outputStrLn . show) lineContext.terms
+            Right program -> do
+              lift $ modify (program.bindings <>)
+              bindings <- lift get
+              mapM_ (outputStrLn . show) $
+                runProgram Program{bindings, terms = program.terms}
           loop
+
+-- TODO: Refactor this to be less ad-hoc.
+
+-- | Run an interpreter command.
+runCommand :: String -> InputT (StateT Bindings IO) Bool
+runCommand input
+  | command `elem` ["q", "quit"] = return True
+  | command == "parse"
+    , Just term <- stripPrefix "parse" input = do
+    case stringToProgram (T.pack term) of
+      Left bundle -> outputStr (errorBundlePretty bundle)
+      Right program -> mapM_ (outputStrLn . show) program.terms
+    return False
+  -- TODO: Generate this help string more robustly.
+  | command `elem` ["?", "h", "help"] = do
+    outputStrLn $
+      "Commands available from the prompt:\n"
+        <> "  :parse <term>  show the parse tree for <term> in bracketed form\n"
+        <> "  :help, :?      view this list of commands\n"
+        <> "  :quit, :q      exit sly"
+    return False
+  | otherwise = do
+    outputStrLn $ "Unrecognised REPL command: " <> command
+    outputStrLn "Use :? for help."
+    return False
+ where
+  command = head $ words input

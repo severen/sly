@@ -17,16 +17,20 @@
 -}
 
 module Eval (
-  Context (..),
-  emptyContext,
-  mkContext,
-  fileToContext,
-  stringToContext,
+  Bindings,
+  Program (..),
+  mkProgram,
+  fileToProgram,
+  stringToProgram,
+  runProgram,
+  hnf,
+  whnf,
   alpha,
-  beta,
   subst,
   freeVariables,
   boundVariables,
+  toChurch,
+  fromChurch,
 ) where
 
 import Data.Map.Strict (Map)
@@ -43,18 +47,16 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
--- | An evaluation context for a sly program.
-data Context = Context {bindings :: Map Name Term, terms :: [Term]}
-  deriving (Show, Eq)
+-- | Type alias for a map of top-level let bindings.
+type Bindings = Map Name Term
 
--- | An empty evaluation context.
-emptyContext :: Context
-emptyContext = Context{bindings = Map.empty, terms = []}
+-- | A sly program.
+data Program = Program {bindings :: Bindings, terms :: [Term]}
 
--- | Create an evaluation context from a list of statements.
-mkContext :: [Statement] -> Context
-mkContext statements =
-  Context{bindings = extractBindings statements, terms = extractTerms statements}
+-- | Create a program from a list of statements.
+mkProgram :: [Statement] -> Program
+mkProgram statements =
+  Program{bindings = extractBindings statements, terms = extractTerms statements}
  where
   extractBindings =
     Map.fromList
@@ -64,26 +66,39 @@ mkContext statements =
     map (\case (Term t) -> t; _ -> error "Unreachable!")
       . filter (\case Term _ -> True; Ass _ _ -> False)
 
--- | Create an evaluation context from a program file.
-fileToContext :: FilePath -> IO (Either (ParseErrorBundle Text Void) Context)
-fileToContext path = do
+-- | Load a program from a file.
+fileToProgram :: FilePath -> IO (Either (ParseErrorBundle Text Void) Program)
+fileToProgram path = do
   -- NOTE: Program files are strictly considered to have a UTF-8 encoding.
   program <- decodeUtf8 <$> BS.readFile path
   return case parse path program of
     Left bundle -> Left bundle
-    Right statements -> Right (mkContext statements)
+    Right statements -> Right (mkProgram statements)
 
--- | Create an evaluation context from a program string.
-stringToContext :: Text -> Either (ParseErrorBundle Text Void) Context
-stringToContext program =
-  case parse "<anonymous>" program of
+-- | Load a program from a string.
+stringToProgram :: Text -> Either (ParseErrorBundle Text Void) Program
+stringToProgram s =
+  case parse "<anonymous>" s of
     Left bundle -> Left bundle
-    Right statements -> Right (mkContext statements)
+    Right statements -> Right (mkProgram statements)
 
--- | Perform one step of β-reduction on a term, if possible.
-beta :: Term -> Term
-beta (App (Abs x body) t) = subst x t body
-beta t = t
+-- | Run a program.
+runProgram :: Program -> [Term]
+runProgram program = map (hnf . applyBindings program.bindings) program.terms
+ where
+  applyBindings = flip $ Map.foldlWithKey' \t k v -> App (Abs k t) v
+
+-- | Reduce a term to head normal form.
+hnf :: Term -> Term
+hnf t = case whnf t of
+  Var v -> Var v
+  Abs v m -> Abs v (hnf m)
+  App m n -> App (hnf m) (hnf n)
+
+-- | Reduce a term to weak head normal form.
+whnf :: Term -> Term
+whnf (App s t) | Abs x body <- whnf s = whnf $ subst x t body
+whnf t = t
 
 -- | Perform α-conversion on a term, if possible.
 alpha :: Name -> Name -> Term -> Term
@@ -94,7 +109,7 @@ alpha x y t = case t of
     | otherwise -> Abs z (alpha x y body)
   App t1 t2 -> App (alpha x y t1) (alpha x y t2)
 
--- | Substitute all occurences of x in t with s.
+-- | In a term t, substitute all occurences of the variable x with the term s.
 subst :: Name -> Term -> Term -> Term
 subst x s t = case t of
   Var y
@@ -133,3 +148,21 @@ boundVariables :: Term -> Set Name
 boundVariables (Var _) = Set.empty
 boundVariables (Abs x body) = Set.singleton x <> boundVariables body
 boundVariables (App s t) = boundVariables s <> boundVariables t
+
+-- | Convert an integer into a Church numeral term.
+toChurch :: Int -> Term
+toChurch n =
+  Abs (Name "f") $
+    Abs (Name "x") $
+      iterate (App (Var $ Name "f")) (Var $ Name "x") !! n
+
+-- | Convert a term into an integer if it has the shape of a Church numeral.
+fromChurch :: Term -> Maybe Int
+fromChurch (Abs f (Abs x body)) = go 0 body
+ where
+  go :: Int -> Term -> Maybe Int
+  go n = \case
+    Var y | y == x -> Just n
+    App (Var g) t | g == f -> go (n + 1) t
+    _ -> Nothing
+fromChurch _ = Nothing
