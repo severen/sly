@@ -54,6 +54,10 @@ import qualified Text.Megaparsec.Char.Lexer as L
 -}
 type Parser = Parsec Void Text
 
+-- | Words that are reserved as keywords and thus disallowed as names.
+keywords :: [Text]
+keywords = ["let", "in"]
+
 -- | Parse and discard one or more whitespace characters.
 space1 :: Parser ()
 space1 = void $ some (satisfy isPatternWhitespace)
@@ -84,7 +88,7 @@ brackets = between (punc "(") (punc ")")
 
 -- | Parse a 'start' character in a name.
 nameStart :: Parser Char
-nameStart = satisfy \c -> c /= 'λ' && isXIDStart c
+nameStart = satisfy \c -> isXIDStart c && c /= 'λ'
 
 -- | Parse a sequence of 'continue' characters in a name.
 nameContinue :: Parser [Char]
@@ -92,13 +96,14 @@ nameContinue = many $ satisfy \c -> isXIDContinue c || c == '\''
 
 -- | Parse a name according to the Unicode Standard Annex #31.
 name :: Parser Name
-name =
-  Name <$> lexeme do
-    start <- nameStart
-    continue <- nameContinue
-    return $ T.pack (start : continue)
+name = Name <$> (lexeme . try) (p >>= check)
+ where
+  p = T.pack <$> ((:) <$> nameStart <*> nameContinue)
+  check s
+    | s `notElem` keywords = return s
+    | otherwise = fail $ "keyword " <> T.unpack s <> " cannot be a name"
 
--- | Parser for a variable term.
+-- | Parse a variable term.
 variable :: Parser Term
 variable = Var <$> name <?> "variable"
 
@@ -106,55 +111,70 @@ variable = Var <$> name <?> "variable"
 natural :: Parser Term
 natural = toChurch <$> lexeme L.decimal
 
--- | Parser for a λ-abstraction.
+-- | Parse a λ-abstraction.
 abstraction :: Parser Term
 abstraction = do
   punc "\\" <|> punc "λ"
-  head' <- (name <?> "variable") `sepBy1` spaceConsumer
+  binders <- (name <?> "variable") `sepBy1` spaceConsumer
   punc "->" <|> punc "↦"
   body <- term
 
-  return $ desugar head' body
+  return $ abstract binders body
  where
   -- Expand an abstraction with multiple variables into its internal representation of
   -- nested single-variable abstractions.
-  desugar = flip $ foldr' Abs
+  abstract = flip $ foldr' Abs
 
--- | Parser for an application term.
+-- | Parse an application term.
 application :: Parser (Term -> Term -> Term)
 application = return App
 
--- | Parser for a term.
-term :: Parser Term
-term = makeExprParser (choice indivisibles) operatorTable
- where
-  indivisibles = [variable, natural, abstraction, brackets term]
-  operatorTable :: [[Operator Parser Term]]
-  operatorTable = [[InfixL application]]
-
--- | Parser for an assignment statement.
-assignment :: Parser Statement
-assignment = do
+-- | Parse the initial common fragment of a let term or a let statement.
+lettStart :: Parser (Name, Term)
+lettStart = do
   punc "let"
   name' <- name <?> "name"
   punc ":="
   term' <- term
+  return (name', term')
 
-  return $ Ass name' term'
+-- | Parse a let term.
+lett :: Parser Term
+lett = do
+  (x, t) <- lettStart
+  punc "in"
+  body <- term
+  -- NOTE: let x := t in body is syntactic sugar for (λx -> body) t. 
+  return $ App (Abs x body) t
 
--- | Parser for a term statement.
+-- | Parse a λ-term.
+term :: Parser Term
+term = makeExprParser (choice indivisibles) operatorTable
+ where
+  indivisibles = [variable, natural, abstraction, lett, brackets term]
+  operatorTable :: [[Operator Parser Term]]
+  operatorTable = [[InfixL application]]
+
+-- | Parse an assignment statement.
+assignment :: Parser Statement
+assignment = try do
+  (x, t) <- lettStart
+  notFollowedBy "in"
+  return $ Ass x t
+
+-- | Parse a term statement.
 termS :: Parser Statement
 termS = Term <$> term
 
--- | Parser for a program statement.
+-- | Parse a program statement.
 statement :: Parser Statement
 statement = assignment <|> termS
 
--- | Parser for the end of a statement.
+-- | Parse the end of a statement.
 eos :: Parser ()
 eos = punc "."
 
-{- | Parser for a complete program file.
+{- | Parse a complete program file.
 
   We define 'program' in this context to be a sequence of bindings and/or terms.
 -}
