@@ -29,8 +29,6 @@ module Eval (
   subst,
   freeVariables,
   boundVariables,
-  toChurch,
-  fromChurch,
 ) where
 
 import Data.Foldable (foldr')
@@ -152,21 +150,3 @@ boundVariables :: Term -> Set Name
 boundVariables (Var _) = Set.empty
 boundVariables (Abs x body) = Set.singleton x <> boundVariables body
 boundVariables (App s t) = boundVariables s <> boundVariables t
-
--- | Convert an integer into a Church numeral term.
-toChurch :: Int -> Term
-toChurch n =
-  Abs (Name "f") $
-    Abs (Name "x") $
-      iterate (App (Var $ Name "f")) (Var $ Name "x") !! n
-
--- | Convert a term into an integer if it has the shape of a Church numeral.
-fromChurch :: Term -> Maybe Int
-fromChurch (Abs f (Abs x body)) = go 0 body
- where
-  go :: Int -> Term -> Maybe Int
-  go n = \case
-    Var y | y == x -> Just n
-    App (Var g) t | g == f -> go (n + 1) t
-    _ -> Nothing
-fromChurch _ = Nothing

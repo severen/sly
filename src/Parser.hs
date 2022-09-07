@@ -16,7 +16,7 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module Parser (Name (..), Term (..), Statement (..), parse) where
+module Parser (Name (..), Term (..), Statement (..), parse, toChurch, fromChurch) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Foldable (foldr')
@@ -100,7 +100,7 @@ spaceConsumer =
     (L.skipLineComment "--")
     (L.skipBlockCommentNested "/-" "-/")
 
-lexeme :: Parser Text -> Parser Text
+lexeme :: Parser a -> Parser a
 lexeme = L.lexeme spaceConsumer
 
 symbol :: Text -> Parser Text
@@ -136,6 +136,10 @@ name =
 variable :: Parser Term
 variable = Var <$> name <?> "variable"
 
+-- | Parse a natural number.
+natural :: Parser Term
+natural = toChurch <$> lexeme L.decimal
+
 -- | Parser for a λ-abstraction.
 abstraction :: Parser Term
 abstraction = do
@@ -158,7 +162,7 @@ application = return App
 term :: Parser Term
 term = makeExprParser (choice indivisibles) operatorTable
  where
-  indivisibles = [variable, abstraction, brackets term]
+  indivisibles = [variable, natural, abstraction, brackets term]
   operatorTable :: [[Operator Parser Term]]
   operatorTable = [[InfixL application]]
 
@@ -194,3 +198,22 @@ program = spaceConsumer *> statement `endBy` eos <* eof
 -- | Parse a sly program given a filename and a program string.
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Statement]
 parse = runParser program
+
+-- TODO: Find a better place for these to go.
+-- | Convert an integer into a Church numeral term.
+toChurch :: Int -> Term
+toChurch n =
+  Abs (Name "f") $
+    Abs (Name "x") $
+      iterate (App (Var $ Name "f")) (Var $ Name "x") !! n
+
+-- | Convert a term into an integer if it has the shape of a Church numeral.
+fromChurch :: Term -> Maybe Int
+fromChurch (Abs f (Abs x body)) = go 0 body
+ where
+  go :: Int -> Term -> Maybe Int
+  go n = \case
+    Var y | y == x -> Just n
+    App (Var g) t | g == f -> go (n + 1) t
+    _ -> Nothing
+fromChurch _ = Nothing
