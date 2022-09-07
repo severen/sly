@@ -19,6 +19,7 @@
 module Main (main) where
 
 import Control.Monad (unless)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict (StateT, evalStateT, get, modify)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
@@ -75,31 +76,39 @@ repl = do
           case stringToProgram (T.pack input) of
             Left bundle -> outputStr (errorBundlePretty bundle)
             Right program -> do
-              lift $ modify (program.bindings <>)
+              lift $ modify (<> program.bindings)
               bindings <- lift get
               mapM_ (outputStrLn . show) $
                 runProgram Program{bindings, terms = program.terms}
           loop
 
 -- TODO: Refactor this to be less ad-hoc.
-
 -- | Run an interpreter command.
 runCommand :: String -> InputT (StateT Bindings IO) Bool
 runCommand input
   | command `elem` ["q", "quit"] = return True
-  | command == "parse"
-    , Just term <- stripPrefix "parse" input = do
+  | command == "parse", Just term <- stripPrefix "parse " input = do
     case stringToProgram (T.pack term) of
       Left bundle -> outputStr (errorBundlePretty bundle)
       Right program -> mapM_ (outputStrLn . show) program.terms
+    return False
+  | command == "load", Just filepath <- stripPrefix "load " input = do
+    result <- liftIO $ fileToProgram filepath
+    case result of
+      Left bundle -> outputStr (errorBundlePretty bundle)
+      Right program -> do
+        mapM_ (outputStrLn . show) (runProgram program)
+        lift $ modify (<> program.bindings)
     return False
   -- TODO: Generate this help string more robustly.
   | command `elem` ["?", "h", "help"] = do
     outputStrLn $
       "Commands available from the prompt:\n"
-        <> "  :parse <term>  show the parse tree for <term> in bracketed form\n"
-        <> "  :help, :?      view this list of commands\n"
-        <> "  :quit, :q      exit sly"
+        <> "  :parse <term>     show the parse tree for <term> in bracketed form\n"
+        <> "  :load, :l <path>  load a sly program, evaluating its terms and adding\n"
+        <> "                    its bindings to the environment\n"
+        <> "  :help, :?         view this list of commands\n"
+        <> "  :quit, :q         exit sly"
     return False
   | otherwise = do
     outputStrLn $ "Unrecognised REPL command: " <> command
