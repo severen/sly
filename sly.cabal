@@ -26,7 +26,7 @@ executable sly
   hs-source-dirs: src
 
   main-is: Main.hs
-  other-modules: Parser Eval
+  other-modules: Syntax Parser Eval
 
   ghc-options: -W -Wall
   default-language: GHC2021

@@ -26,6 +26,8 @@ import Data.Void (Void)
 import Text.Megaparsec hiding (Token, parse)
 import Unicode.Char.Identifiers (isPatternWhitespace, isXIDContinue, isXIDStart)
 
+import Syntax
+
 import qualified Data.Text as T
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -51,42 +53,6 @@ import qualified Text.Megaparsec.Char.Lexer as L
  optimiser.
 -}
 type Parser = Parsec Void Text
-
-{- | A name in a program.
-
- A name is an identifier that is either used as a variable or an identifier to which an
- arbitrary term is bound.
--}
-newtype Name = Name Text deriving (Eq, Ord, Show)
-
--- | A program statement.
-data Statement
-  = -- | A λ-term.
-    Term Term
-  | -- | An assignment of a name to a λ-term.
-    Ass {-# UNPACK #-} !Name Term
-  deriving (Eq)
-
-instance Show Statement where
-  show (Term t) = show t <> "."
-  show (Ass (Name n) t) = T.unpack $ "let " <> n <> " := " <> T.pack (show t) <> "."
-
--- | A λ-term.
-data Term
-  = -- | A variable.
-    Var {-# UNPACK #-} !Name
-  | -- | A λ-abstraction.
-    Abs {-# UNPACK #-} !Name Term
-  | -- | An application of a λ-abstraction.
-    App Term Term
-  deriving (Eq)
-
-instance Show Term where
-  show = T.unpack . go
-   where
-    go (Var (Name n)) = n
-    go (Abs (Name n) t) = "(λ" <> n <> " -> " <> go t <> ")"
-    go (App l r) = "(" <> go l <> " " <> go r <> ")"
 
 -- | Parse and discard one or more whitespace characters.
 space1 :: Parser ()
@@ -198,22 +164,3 @@ program = spaceConsumer *> statement `endBy` eos <* eof
 -- | Parse a sly program given a filename and a program string.
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Statement]
 parse = runParser program
-
--- TODO: Find a better place for these to go.
--- | Convert an integer into a Church numeral term.
-toChurch :: Int -> Term
-toChurch n =
-  Abs (Name "f") $
-    Abs (Name "x") $
-      iterate (App (Var $ Name "f")) (Var $ Name "x") !! n
-
--- | Convert a term into an integer if it has the shape of a Church numeral.
-fromChurch :: Term -> Maybe Int
-fromChurch (Abs f (Abs x body)) = go 0 body
- where
-  go :: Int -> Term -> Maybe Int
-  go n = \case
-    Var y | y == x -> Just n
-    App (Var g) t | g == f -> go (n + 1) t
-    _ -> Nothing
-fromChurch _ = Nothing
