@@ -1,0 +1,3 @@
+packages: sly.cabal
+-- This can be removed after composewell/unicode-data#78 is merged.
+allow-newer: unicode-data-0.3.0:base
