@@ -33,7 +33,8 @@ module Eval (
   fromChurch,
 ) where
 
-import Data.Map.Strict (Map)
+import Data.Foldable (foldr')
+import Data.Sequence (Seq)
 import Data.Set (Set, (\\))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
@@ -43,12 +44,12 @@ import Text.Megaparsec (ParseErrorBundle)
 import Parser
 
 import qualified Data.ByteString as BS
-import qualified Data.Map.Strict as Map
+import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
 -- | Type alias for a map of top-level let bindings.
-type Bindings = Map Name Term
+type Bindings = Seq (Name, Term)
 
 -- | A sly program.
 data Program = Program {bindings :: Bindings, terms :: [Term]}
@@ -59,7 +60,7 @@ mkProgram statements =
   Program{bindings = extractBindings statements, terms = extractTerms statements}
  where
   extractBindings =
-    Map.fromList
+    Seq.fromList
       . map (\case (Ass n t) -> (n, t); _ -> error "Unreachable!")
       . filter (\case Term _ -> False; Ass _ _ -> True)
   extractTerms =
@@ -86,7 +87,10 @@ stringToProgram s =
 runProgram :: Program -> [Term]
 runProgram program = map (hnf . applyBindings program.bindings) program.terms
  where
-  applyBindings = flip $ Map.foldlWithKey' \t k v -> App (Abs k t) v
+  -- TODO: Implement bindings without this caveat!
+  -- NOTE: The use of foldr is to ensure that bindings are applied in a way that allows
+  --       them to depend on earlier bindings defined in an interactive session or file.
+  applyBindings = flip $ foldr' \(k, v) t -> App (Abs k t) v
 
 -- | Reduce a term to head normal form.
 hnf :: Term -> Term

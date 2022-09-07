@@ -28,7 +28,6 @@ import Text.Megaparsec (errorBundlePretty)
 
 import Eval
 
-import qualified Data.Map as Map
 import qualified Data.Text as T
 
 -- NOTE: This should not conflict with valid program syntax.
@@ -61,7 +60,7 @@ help progName =
 repl :: IO ()
 repl = do
   putStrLn "Welcome to sly v0.1.0!\nType :quit or press C-d to exit."
-  evalStateT (runInputT defaultSettings loop) Map.empty
+  evalStateT (runInputT defaultSettings loop) mempty
  where
   loop :: InputT (StateT Bindings IO) ()
   loop = do
