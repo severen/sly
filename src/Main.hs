@@ -27,6 +27,7 @@ import System.Console.Haskeline
 import System.Environment
 import Text.Megaparsec (errorBundlePretty)
 
+import Syntax (astShow)
 import Eval
 
 import qualified Data.Text as T
@@ -90,7 +91,7 @@ runCommand input
   | command == "parse", Just term <- stripPrefix "parse " input = do
     case stringToProgram (T.pack term) of
       Left bundle -> outputStr (errorBundlePretty bundle)
-      Right program -> mapM_ (outputStrLn . show) program.terms
+      Right program -> mapM_ (outputStrLn . astShow) program.terms
     return False
   | command == "load", Just filepath <- stripPrefix "load " input = do
     result <- liftIO $ fileToProgram filepath

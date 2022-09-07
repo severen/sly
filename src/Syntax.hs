@@ -16,7 +16,14 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module Syntax (Name (..), Statement (..), Term (..), toChurch, fromChurch) where
+module Syntax (
+  Name (..),
+  Statement (..),
+  Term (..),
+  astShow,
+  toChurch,
+  fromChurch
+) where
 
 import Data.Text (Text)
 
@@ -54,9 +61,25 @@ data Term
 instance Show Term where
   show = T.unpack . go
    where
+    go :: Term -> Text
     go (Var (Name n)) = n
-    go (Abs (Name n) t) = "(λ" <> n <> " -> " <> go t <> ")"
-    go (App l r) = "(" <> go l <> " " <> go r <> ")"
+    go (Abs (Name n) body) = "λ" <> n <> slurp body
+    go (App l@(Abs _ _) r) = "(" <> go l <> ") " <> go r
+    go (App l r@(App _ _)) = go l <> " (" <> go r <> ")"
+    go (App l r) = go l <> " " <> go r
+
+    -- | Slurp up λ-abstractions!
+    slurp :: Term -> Text   
+    slurp (Abs (Name n) body) = " " <> n <> slurp body
+    slurp body = " -> " <> go body
+
+-- | Like regular show, but displays the term fully bracketed.
+astShow :: Term -> String
+astShow = T.unpack . go
+ where
+  go (Var (Name n)) = n
+  go (Abs (Name n) t) = "(λ" <> n <> " -> " <> go t <> ")"
+  go (App l r) = "(" <> go l <> " " <> go r <> ")"
 
 -- | Convert an integer into a Church numeral term.
 toChurch :: Int -> Term
