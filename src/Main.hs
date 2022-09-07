@@ -25,6 +25,7 @@ import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
 import System.Console.Haskeline
 import System.Environment
+import System.Random (initStdGen, uniformR)
 import Text.Megaparsec (errorBundlePretty)
 
 import Syntax (Name (..), astShow)
@@ -33,7 +34,6 @@ import Eval
 import qualified Data.Text as T
 
 -- NOTE: This should not conflict with valid program syntax.
-
 -- | The prefix used for REPL commands.
 commandPrefix :: String
 commandPrefix = ":"
@@ -61,7 +61,14 @@ help progName =
 
 repl :: IO ()
 repl = do
-  putStrLn "Welcome to sly v0.1.0!\nType :quit or press C-d to exit."
+  let adjectives = ["cunning", "crafty", "guileful", "shrewd"]
+
+  stdGen <- liftIO initStdGen
+  let (n, _) = uniformR (0, length adjectives - 1) stdGen
+  putStrLn $
+    "Welcome to sly v0.1.0, the " <> adjectives !! n <> " λ-calculus interpreter!\n"
+      <> "Type :quit or press C-d to exit."
+
   evalStateT (runInputT defaultSettings loop) mempty
  where
   loop :: InputT (StateT Bindings IO) ()
