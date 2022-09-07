@@ -20,14 +20,14 @@ module Main (main) where
 
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State.Strict (StateT, evalStateT, get, modify)
+import Control.Monad.State.Strict (StateT, evalStateT, get, put, modify)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
 import System.Console.Haskeline
 import System.Environment
 import Text.Megaparsec (errorBundlePretty)
 
-import Syntax (astShow)
+import Syntax (Name (..), astShow)
 import Eval
 
 import qualified Data.Text as T
@@ -101,6 +101,12 @@ runCommand input
         mapM_ (outputStrLn . show) (runProgram program)
         lift $ modify (<> program.bindings)
     return False
+  | command `elem` ["b", "bindings"] = do
+    let format (Name n, t) = T.unpack n <> " := " <> show t
+    bindings <- lift get
+    mapM_ (outputStrLn . format) bindings
+    return False
+  | command == "clear" = lift $ put mempty >> return False
   -- TODO: Generate this help string more robustly.
   | command `elem` ["?", "h", "help"] = do
     outputStrLn $
@@ -108,6 +114,8 @@ runCommand input
         <> "  :parse <term>     show the parse tree for <term> in bracketed form\n"
         <> "  :load, :l <path>  load a sly program, evaluating its terms and adding\n"
         <> "                    its bindings to the environment\n"
+        <> "  :bindings, :b     show all bindings in the environment\n"
+        <> "  :clear            clear the environment\n"
         <> "  :help, :?         view this list of commands\n"
         <> "  :quit, :q         exit sly"
     return False
