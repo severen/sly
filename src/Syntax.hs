@@ -69,7 +69,7 @@ instance Show Term where
     go (App l r) = go l <> " " <> go r
 
     -- | Slurp up λ-abstractions!
-    slurp :: Term -> Text   
+    slurp :: Term -> Text
     slurp (Abs (Name n) body) = " " <> n <> slurp body
     slurp body = " -> " <> go body
 

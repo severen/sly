@@ -101,6 +101,7 @@ name = Name <$> (lexeme . try) (p >>= check)
   p = T.pack <$> ((:) <$> nameStart <*> nameContinue)
   check s
     | s `notElem` keywords = return s
+    -- TODO: See if the positioning of this error message (when output) can be improved.
     | otherwise = fail $ "keyword " <> T.unpack s <> " cannot be a name"
 
 -- | Parse a variable term.
