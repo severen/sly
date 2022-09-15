@@ -16,7 +16,7 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module Eval (
+module Sly.Eval (
   Bindings,
   Program (..),
   mkProgram,
@@ -39,7 +39,7 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Void (Void)
 import Text.Megaparsec (ParseErrorBundle)
 
-import Parser
+import Sly.Parser
 
 import qualified Data.ByteString as BS
 import qualified Data.Sequence as Seq

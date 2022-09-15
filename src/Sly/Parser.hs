@@ -16,7 +16,14 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module Parser (Name (..), Term (..), Statement (..), parse, toChurch, fromChurch) where
+module Sly.Parser (
+  Name (..),
+  Term (..),
+  Statement (..),
+  parse,
+  toChurch,
+  fromChurch,
+) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Foldable (foldr')
@@ -26,7 +33,7 @@ import Data.Void (Void)
 import Text.Megaparsec hiding (Token, parse)
 import Unicode.Char.Identifiers (isPatternWhitespace, isXIDContinue, isXIDStart)
 
-import Syntax
+import Sly.Syntax
 
 import qualified Data.Text as T
 import qualified Text.Megaparsec.Char.Lexer as L

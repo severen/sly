@@ -33,6 +33,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.ghc }}-0-
       - run: cabal build
+      - run: cabal test
       - run: cabal sdist
       - uses: actions/upload-artifact@v3
         with:

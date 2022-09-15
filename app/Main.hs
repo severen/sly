@@ -28,8 +28,8 @@ import System.Environment
 import System.Random (initStdGen, uniformR)
 import Text.Megaparsec (errorBundlePretty)
 
-import Syntax (Name (..), astShow)
-import Eval
+import Sly.Syntax (Name (..), astShow)
+import Sly.Eval
 
 import qualified Data.Text as T
 
