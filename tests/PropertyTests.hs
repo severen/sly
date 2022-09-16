@@ -17,7 +17,7 @@ propertyTests =
       ]
 
 prop_fromChurch_toChurch :: Property
-prop_fromChurch_toChurch = property $ do
+prop_fromChurch_toChurch = property do
   -- fromChurch is _almost_ a left-identity for toChurch.
   n <- forAll $ Gen.integral (Range.linear 0 1000)
   (fromChurch . toChurch) n === Just n
