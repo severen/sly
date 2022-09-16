@@ -57,6 +57,7 @@ common exe-deps
 common test-deps
   build-depends:
     sly,
+    hedgehog ^>=1.0.2,
     hspec ^>=2.9.2,
     hspec-megaparsec ^>=2.2.0,
     tasty ^>=1.4.2.3,
@@ -82,3 +83,4 @@ test-suite test
   type: exitcode-stdio-1.0
 
   main-is: Test.hs
+  other-modules: UnitTests, PropertyTests
