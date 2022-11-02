@@ -9,7 +9,7 @@ synopsis: An interpreter for the pure untyped λ-calculus.
 -- A longer description of the package.
 -- description:
 author: Severen Redwood
-maintainer: severen@shrike.me
+maintainer: me@severen.dev
 
 license: GPL-3.0-or-later
 license-file: LICENSE
