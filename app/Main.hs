@@ -58,8 +58,7 @@ repl = do
  where
   loop :: InputT (StateT Bindings IO) ()
   loop = do
-    minput <- getInputLine "~> "
-    case minput of
+    getInputLine "~> " >>= \case
       Nothing -> return ()
       Just input
         | commandPrefix `isPrefixOf` input -> do
