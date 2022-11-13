@@ -5,7 +5,7 @@ module Main (main) where
 
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State.Strict (StateT, evalStateT, get, put, modify)
+import Control.Monad.State.Strict (StateT, evalStateT, get, modify, put)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
 import System.Console.Haskeline
@@ -13,8 +13,8 @@ import System.Environment
 import System.Random (initStdGen, uniformR)
 import Text.Megaparsec (errorBundlePretty)
 
-import Sly.Syntax (Name (..), astShow)
 import Sly.Eval
+import Sly.Syntax (Name (..), astShow)
 
 import qualified Data.Text as T
 

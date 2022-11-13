@@ -104,10 +104,10 @@ variable = Var <$> name <?> "variable"
 natural :: Parser Term
 natural = toChurch <$> (lexeme L.decimal >>= check)
  where
-   check n
-     | n <= toInteger maxInt = return (fromInteger n)
-     | otherwise = fail $ "naturals larger than " <> show maxInt <> " are disallowed"
-   maxInt = maxBound @Int
+  check n
+    | n <= toInteger maxInt = return (fromInteger n)
+    | otherwise = fail $ "naturals larger than " <> show maxInt <> " are disallowed"
+  maxInt = maxBound @Int
 
 -- | Parse a λ-abstraction.
 abstraction :: Parser Term
