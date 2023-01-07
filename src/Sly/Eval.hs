@@ -96,23 +96,25 @@ alpha x y t = case t of
     | otherwise -> Abs z (alpha x y body)
   App t1 t2 -> App (alpha x y t1) (alpha x y t2)
 
--- | In a term t, substitute all occurences of the variable x with the term s.
+-- | Replace all free occurences of the variable x in a term t with the term
+-- s.
 subst :: Name -> Term -> Term -> Term
-subst x s t = case t of
-  Var y
-    | x == y -> s
-    | otherwise -> t
-  Abs y body
-    | x == y -> t
-    | y `notFreeIn` s -> Abs y (subst x s body)
-    | otherwise ->
+subst x s = go
+ where
+  go v@(Var y)
+    | x == y = s
+    | otherwise = v
+  go f@(Abs y body)
+    | x == y = f
+    | y `Set.notMember` fvs = Abs y (go body)
+    | otherwise =
       -- At this point, we must avoid variable capture. So...
       let z = chooseName y (Set.singleton y <> freeVariables body) -- pick a new name,
-          u = alpha y z t -- α-convert,
-       in subst x s u -- and try again!
-  App t1 t2 -> App (subst x s t1) (subst x s t2)
- where
-  chooseName :: Name -> Set Name -> Name
+          u = alpha y z f -- α-convert,
+       in go u -- and continue!
+  go (App t1 t2) = App (go t1) (go t2)
+
+  fvs = freeVariables s
   chooseName (Name n) ys =
     head $ filter (`Set.notMember` ys) $ Name . (n <>) <$> iterate (<> "'") T.empty
 
