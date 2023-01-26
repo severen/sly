@@ -4,16 +4,29 @@
 module Main (main) where
 
 import Control.Monad (unless)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State.Strict (StateT, evalStateT, get, modify, put)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
-import System.Console.Haskeline
-import System.Environment
+import Effectful (Eff, IOE, liftIO, runEff, (:>))
+import Effectful.State.Static.Local (State, evalState, get, modify, put)
+import System.Console.Haskeline (
+  InputT,
+  defaultSettings,
+  getInputLine,
+  outputStr,
+  outputStrLn,
+  runInputT,
+ )
+import System.Environment (getArgs, getProgName)
 import System.Random (initStdGen, uniformR)
 import Text.Megaparsec (errorBundlePretty)
 
-import Sly.Eval
+import Sly.Eval (
+  Bindings,
+  Program (Program, bindings, terms),
+  fileToProgram,
+  runProgram,
+  stringToProgram,
+ )
 import Sly.Syntax (Name (..), astShow)
 
 import qualified Data.Text as T
@@ -28,7 +41,7 @@ main = do
   progName <- getProgName
   args <- getArgs
   case args of
-    [] -> repl
+    [] -> runEff repl
     ["--help"] -> putStrLn (help progName)
     [path] -> do
       result <- fileToProgram path
@@ -44,19 +57,20 @@ help progName =
     <> "Options:\n"
     <> "--help  Show this message and exit."
 
-repl :: IO ()
+repl :: IOE :> es => Eff es ()
 repl = do
   let adjectives = ["cunning", "crafty", "guileful", "shrewd"]
 
   stdGen <- liftIO initStdGen
   let (n, _) = uniformR (0, length adjectives - 1) stdGen
-  putStrLn $
-    "Welcome to sly v0.1.0, the " <> adjectives !! n <> " λ-calculus interpreter!\n"
-      <> "Type :quit or press C-d to exit."
+  liftIO $
+    putStrLn $
+      "Welcome to sly v0.1.0, the " <> adjectives !! n <> " λ-calculus interpreter!\n"
+        <> "Type :quit or press C-d to exit."
 
-  evalStateT (runInputT defaultSettings loop) mempty
+  evalState mempty $ runInputT defaultSettings loop
  where
-  loop :: InputT (StateT Bindings IO) ()
+  loop :: (State Bindings :> es, IOE :> es) => InputT (Eff es) ()
   loop = do
     getInputLine "~> " >>= \case
       Nothing -> return ()
@@ -75,8 +89,9 @@ repl = do
           loop
 
 -- TODO: Refactor this to be less ad-hoc.
+
 -- | Run an interpreter command.
-runCommand :: String -> InputT (StateT Bindings IO) Bool
+runCommand :: (State Bindings :> es, IOE :> es) => String -> InputT (Eff es) Bool
 runCommand input
   | command `elem` ["q", "quit"] = return True
   | command == "parse", Just term <- stripPrefix "parse " input = do
