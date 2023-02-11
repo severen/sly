@@ -3,20 +3,35 @@
 
 module Main (main) where
 
+import Control.Applicative (optional, (<**>))
 import Control.Monad (unless)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
 import Effectful (Eff, IOE, MonadIO, liftIO, runEff, (:>))
 import Effectful.State.Static.Local (State, evalState, get, modify, put)
+import Options.Applicative (
+  execParser,
+  fullDesc,
+  header,
+  help,
+  helper,
+  info,
+  long,
+  metavar,
+  short,
+  strArgument,
+  switch,
+ )
 import System.Console.Haskeline (
   InputT,
   defaultSettings,
   getInputLine,
   runInputT,
  )
-import System.Environment (getArgs, getProgName)
 import System.Random (initStdGen, uniformR)
 import Text.Megaparsec (errorBundlePretty)
+
+import Data.Text qualified as T
 
 import Sly.Eval (
   Bindings,
@@ -27,7 +42,7 @@ import Sly.Eval (
  )
 import Sly.Syntax (Name (..), astShow)
 
-import qualified Data.Text as T
+data Options = Options {file :: Maybe String, version :: Bool}
 
 -- NOTE: This should not conflict with valid program syntax.
 -- | The prefix used for REPL commands.
@@ -41,25 +56,29 @@ outputStrLn :: MonadIO m => String -> m ()
 outputStrLn = liftIO . putStrLn
 
 main :: IO ()
-main = do
-  progName <- getProgName
-  args <- getArgs
-  case args of
-    [] -> runEff repl
-    ["--help"] -> putStrLn (help progName)
-    [path] -> do
-      result <- fileToProgram path
-      case result of
-        Left bundle -> putStr (errorBundlePretty bundle)
-        Right program -> mapM_ print (runProgram program)
-    _ -> putStrLn "Error: unexpected argument"
+main = (runEff . run) =<< execParser opts
+ where
+  opts = info
+    (parser <**> helper)
+    (fullDesc <> header "sly - An interpreter for the pure untyped λ-calculus.")
+  parser = do
+    file <- optional $ strArgument (metavar "FILE")
+    version <- switch
+      (long "version" <> short 'V' <> help "Print version and exit")
+    pure Options{..}
 
-help :: String -> String
-help progName =
-  "Usage: " <> progName <> " [options] [filename]\n\n"
-    <> "Interpreter for the pure untyped λ-calculus.\n\n"
-    <> "Options:\n"
-    <> "--help  Show this message and exit."
+run :: IOE :> es => Options -> Eff es ()
+run opts = do
+  if opts.version
+    then outputStrLn "sly 0.1.0"
+    else maybe repl runFile opts.file
+
+runFile :: IOE :> es => String -> Eff es ()
+runFile path = do
+  result <- liftIO $ fileToProgram path
+  case result of
+    Left bundle -> outputStr (errorBundlePretty bundle)
+    Right program -> mapM_ (liftIO . print) (runProgram program)
 
 repl :: IOE :> es => Eff es ()
 repl = do
