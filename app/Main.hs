@@ -6,14 +6,12 @@ module Main (main) where
 import Control.Monad (unless)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
-import Effectful (Eff, IOE, liftIO, runEff, (:>))
+import Effectful (Eff, IOE, MonadIO, liftIO, runEff, (:>))
 import Effectful.State.Static.Local (State, evalState, get, modify, put)
 import System.Console.Haskeline (
   InputT,
   defaultSettings,
   getInputLine,
-  outputStr,
-  outputStrLn,
   runInputT,
  )
 import System.Environment (getArgs, getProgName)
@@ -35,6 +33,12 @@ import qualified Data.Text as T
 -- | The prefix used for REPL commands.
 commandPrefix :: String
 commandPrefix = ":"
+
+outputStr :: MonadIO m => String -> m ()
+outputStr = liftIO . putStr
+
+outputStrLn :: MonadIO m => String -> m ()
+outputStrLn = liftIO . putStrLn
 
 main :: IO ()
 main = do
@@ -63,10 +67,9 @@ repl = do
 
   stdGen <- liftIO initStdGen
   let (n, _) = uniformR (0, length adjectives - 1) stdGen
-  liftIO $
-    putStrLn $
-      "Welcome to sly v0.1.0, the " <> adjectives !! n <> " λ-calculus interpreter!\n"
-        <> "Type :quit or press C-d to exit."
+  outputStrLn $
+    "Welcome to sly v0.1.0, the " <> adjectives !! n <> " λ-calculus interpreter!\n"
+      <> "Type :quit or press C-d to exit."
 
   evalState mempty $ runInputT defaultSettings loop
  where
@@ -76,7 +79,7 @@ repl = do
       Nothing -> return ()
       Just input
         | commandPrefix `isPrefixOf` input -> do
-          shouldQuit <- runCommand (tail input)
+          shouldQuit <- lift $ runCommand (tail input)
           unless shouldQuit loop
         | otherwise -> do
           case stringToProgram (T.pack input) of
@@ -84,14 +87,13 @@ repl = do
             Right program -> do
               lift $ modify (<> program.bindings)
               bindings <- lift get
-              mapM_ (outputStrLn . show) $
+              mapM_ (liftIO . print) $
                 runProgram Program{bindings, terms = program.terms}
           loop
 
 -- TODO: Refactor this to be less ad-hoc.
-
 -- | Run an interpreter command.
-runCommand :: (State Bindings :> es, IOE :> es) => String -> InputT (Eff es) Bool
+runCommand :: (State Bindings :> es, IOE :> es) => String -> Eff es Bool
 runCommand input
   | command `elem` ["q", "quit"] = return True
   | command == "parse", Just term <- stripPrefix "parse " input = do
@@ -104,15 +106,15 @@ runCommand input
     case result of
       Left bundle -> outputStr (errorBundlePretty bundle)
       Right program -> do
-        mapM_ (outputStrLn . show) (runProgram program)
-        lift $ modify (<> program.bindings)
+        mapM_ (liftIO . print) (runProgram program)
+        modify (<> program.bindings)
     return False
   | command `elem` ["b", "bindings"] = do
     let format (Name n, t) = T.unpack n <> " := " <> show t
-    bindings <- lift get
+    bindings <- get
     mapM_ (outputStrLn . format) bindings
     return False
-  | command == "clear" = lift $ put mempty >> return False
+  | command == "clear" = put mempty >> return False
   -- TODO: Generate this help string more robustly.
   | command `elem` ["?", "h", "help"] = do
     outputStrLn $
