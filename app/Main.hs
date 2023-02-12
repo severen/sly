@@ -7,6 +7,7 @@ import Control.Applicative (optional, (<**>))
 import Control.Monad (unless)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
+import Data.Version (showVersion)
 import Effectful (Eff, IOE, MonadIO, liftIO, runEff, (:>))
 import Effectful.State.Static.Local (State, evalState, get, modify, put)
 import Options.Applicative (
@@ -33,6 +34,7 @@ import Text.Megaparsec (errorBundlePretty)
 
 import Data.Text qualified as T
 
+import Paths_sly qualified as P (version)
 import Sly.Eval (
   Bindings,
   Program (Program, bindings, terms),
@@ -43,6 +45,9 @@ import Sly.Eval (
 import Sly.Syntax (Name (..), astShow)
 
 data Options = Options {file :: Maybe String, version :: Bool}
+
+versionString :: String
+versionString = "sly v" <> showVersion P.version
 
 -- NOTE: This should not conflict with valid program syntax.
 -- | The prefix used for REPL commands.
@@ -70,7 +75,7 @@ main = (runEff . run) =<< execParser opts
 run :: IOE :> es => Options -> Eff es ()
 run opts = do
   if opts.version
-    then outputStrLn "sly 0.1.0"
+    then outputStrLn versionString
     else maybe repl runFile opts.file
 
 runFile :: IOE :> es => String -> Eff es ()
@@ -87,7 +92,7 @@ repl = do
   stdGen <- liftIO initStdGen
   let (n, _) = uniformR (0, length adjectives - 1) stdGen
   outputStrLn $
-    "Welcome to sly v0.1.0, the " <> adjectives !! n <> " λ-calculus interpreter!\n"
+    "Welcome to " <> versionString <> ", the " <> adjectives !! n <> " λ-calculus interpreter!\n"
       <> "Type :quit or press C-d to exit."
 
   evalState mempty $ runInputT defaultSettings loop

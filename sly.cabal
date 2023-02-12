@@ -79,6 +79,7 @@ library
 
 executable sly
   import: defaults, deps, exe-deps
+  other-modules: Paths_sly
 
   hs-source-dirs: app
   main-is: Main.hs
