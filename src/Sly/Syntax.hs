@@ -12,7 +12,7 @@ module Sly.Syntax (
 
 import Data.Text (Text)
 
-import qualified Data.Text as T
+import Data.Text qualified as T
 
 {- | A name in a program.
 

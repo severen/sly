@@ -24,12 +24,12 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Void (Void)
 import Text.Megaparsec (ParseErrorBundle)
 
-import Sly.Parser
+import Data.ByteString qualified as BS
+import Data.Sequence qualified as Seq
+import Data.Set qualified as Set
+import Data.Text qualified as T
 
-import qualified Data.ByteString as BS
-import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
-import qualified Data.Text as T
+import Sly.Parser
 
 -- | Type alias for a map of top-level let bindings.
 type Bindings = Seq (Name, Term)
