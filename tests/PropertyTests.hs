@@ -9,7 +9,7 @@ import Hedgehog.Range qualified as Range
 import Test.Tasty
 import Test.Tasty.Hedgehog
 
-import Sly.Parser (fromChurch, toChurch)
+import Sly.Syntax (fromChurchNat, toChurchNat)
 
 propertyTests :: TestTree
 propertyTests =
@@ -23,4 +23,4 @@ prop_fromChurch_toChurch :: Property
 prop_fromChurch_toChurch = property do
   -- fromChurch is _almost_ a left-identity for toChurch.
   n <- forAll $ Gen.integral (Range.linear 0 1000)
-  (fromChurch . toChurch) n === Just n
+  (fromChurchNat . toChurchNat) n === Just n

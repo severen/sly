@@ -6,8 +6,10 @@ module Sly.Syntax (
   Statement (..),
   Term (..),
   astShow,
-  toChurch,
-  fromChurch,
+  toChurchNat,
+  fromChurchNat,
+  toChurchBool,
+  fromChurchBool,
 ) where
 
 import Data.Text (Text)
@@ -66,20 +68,33 @@ astShow = T.unpack . go
   go (Abs (Name n) t) = "(λ" <> n <> " -> " <> go t <> ")"
   go (App l r) = "(" <> go l <> " " <> go r <> ")"
 
--- | Convert an integer into a Church numeral term.
-toChurch :: Int -> Term
-toChurch n =
+-- | Convert a nonnegative integer into a Church numeral term.
+toChurchNat :: Int -> Term
+toChurchNat n =
   Abs (Name "f") $
     Abs (Name "x") $
       iterate (App (Var $ Name "f")) (Var $ Name "x") !! n
 
--- | Convert a term into an integer if it has the shape of a Church numeral.
-fromChurch :: Term -> Maybe Int
-fromChurch (Abs f (Abs x body)) = go 0 body
+-- | Convert a term into a nonnegative integer if it has the shape of a Church
+--   numeral.
+fromChurchNat :: Term -> Maybe Int
+fromChurchNat (Abs f (Abs x body)) = go 0 body
  where
   go :: Int -> Term -> Maybe Int
   go n = \case
     Var y | y == x -> Just n
     App (Var g) t | g == f -> go (n + 1) t
     _ -> Nothing
-fromChurch _ = Nothing
+fromChurchNat _ = Nothing
+
+-- | Convert a Boolean into a Church Boolean term.
+toChurchBool :: Bool -> Term
+toChurchBool True = Abs (Name "t") $ Abs (Name "f") $ Var (Name "t")
+toChurchBool False = Abs (Name "t") $ Abs (Name "f") $ Var (Name "f")
+
+-- | Convert a term into a Boolean if it has the shape of a Church Boolean.
+fromChurchBool :: Term -> Maybe Bool
+fromChurchBool (Abs t (Abs f (Var x)))
+  | x == t = Just True
+  | x == f = Just False
+fromChurchBool _ = Nothing

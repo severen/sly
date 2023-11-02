@@ -8,29 +8,28 @@ import Test.Tasty
 import Test.Tasty.Hspec
 
 import Sly.Eval (hnf, whnf)
-import Sly.Parser (fromChurch, toChurch)
-import Sly.Syntax (Name (..), Term (..))
+import Sly.Syntax (Name (..), Term (..), fromChurchNat, toChurchNat)
 
 unitTests :: IO TestTree
 unitTests = testSpec "Unit Tests" do
   describe "Church Numerals" do
     it "0 == \\f x -> x" do
       let zero = Abs (Name "f") (Abs (Name "x") (Var $ Name "x"))
-      toChurch 0 `shouldBe` zero
-      fromChurch zero `shouldBe` Just 0
+      toChurchNat 0 `shouldBe` zero
+      fromChurchNat zero `shouldBe` Just 0
 
     it "1 == \\f x -> f x" do
       let one = Abs (Name "f") (Abs (Name "x") $ App (Var $ Name "f") (Var $ Name "x"))
-      toChurch 1 `shouldBe` one
-      fromChurch one `shouldBe` Just 1
+      toChurchNat 1 `shouldBe` one
+      fromChurchNat one `shouldBe` Just 1
 
     it "2 == \\f x -> f (f x)" do
       let two =
             Abs (Name "f") $
               Abs (Name "x") $
                 App (Var $ Name "f") (App (Var $ Name "f") (Var $ Name "x"))
-      toChurch 2 `shouldBe` two
-      fromChurch two `shouldBe` Just 2
+      toChurchNat 2 `shouldBe` two
+      fromChurchNat two `shouldBe` Just 2
 
   describe "Evaluator" do
     let x = (Var $ Name "x")

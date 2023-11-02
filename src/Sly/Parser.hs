@@ -6,13 +6,11 @@ module Sly.Parser (
   Term (..),
   Statement (..),
   parse,
-  toChurch,
-  fromChurch,
 ) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Foldable (foldr')
-import Data.Functor (void)
+import Data.Functor (($>), void)
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec hiding (Token, parse)
@@ -102,12 +100,18 @@ variable = Var <$> name <?> "variable"
 
 -- | Parse a natural number.
 natural :: Parser Term
-natural = toChurch <$> (lexeme L.decimal >>= check)
+natural = toChurchNat <$> (lexeme L.decimal >>= check)
  where
   check n
     | n <= toInteger maxInt = return (fromInteger n)
     | otherwise = fail $ "naturals larger than " <> show maxInt <> " are disallowed"
   maxInt = maxBound @Int
+
+boolean :: Parser Term
+boolean = toChurchBool <$> (single '#' *> (try true <|> false))
+ where
+  true = (symbol "true" <|> symbol "t") $> True
+  false = (symbol "false" <|> symbol "f") $> False
 
 -- | Parse a λ-abstraction.
 abstraction :: Parser Term
@@ -149,7 +153,7 @@ lett = do
 term :: Parser Term
 term = makeExprParser (choice indivisibles) operatorTable
  where
-  indivisibles = [variable, natural, abstraction, lett, brackets term]
+  indivisibles = [variable, natural, boolean, abstraction, lett, brackets term]
   operatorTable :: [[Operator Parser Term]]
   operatorTable = [[InfixL application]]
 
