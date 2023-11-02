@@ -51,7 +51,9 @@ instance Show Term where
     go :: Term -> Text
     go (Var (Name n)) = n
     go (Abs (Name n) body) = "λ" <> n <> slurp body
+    go (App l@(Abs _ _) r@(Abs _ _)) = "(" <> go l <> ") " <> "(" <> go r <> ")"
     go (App l@(Abs _ _) r) = "(" <> go l <> ") " <> go r
+    go (App l r@(Abs _ _)) = go l <> " (" <> go r <> ")"
     go (App l r@(App _ _)) = go l <> " (" <> go r <> ")"
     go (App l r) = go l <> " " <> go r
 
