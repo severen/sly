@@ -7,6 +7,7 @@ import Control.Applicative (optional, (<**>))
 import Control.Monad (unless)
 import Control.Monad.Trans.Class (lift)
 import Data.List (isPrefixOf, stripPrefix)
+import Data.String.Interpolate (i)
 import Data.Version (showVersion)
 import Effectful (Eff, IOE, MonadIO, liftIO, runEff, (:>))
 import Effectful.State.Static.Local (State, evalState, get, modify, put)
@@ -87,13 +88,13 @@ runFile path = do
 
 repl :: IOE :> es => Eff es ()
 repl = do
-  let adjectives = ["cunning", "crafty", "guileful", "shrewd"]
+  let adjectives = ["cunning", "crafty", "guileful", "shrewd"] :: [String]
 
   stdGen <- liftIO initStdGen
   let (n, _) = uniformR (0, length adjectives - 1) stdGen
-  outputStrLn $
-    "Welcome to " <> versionString <> ", the " <> adjectives !! n <> " λ-calculus interpreter!\n"
-      <> "Type :quit or press C-d to exit."
+  outputStrLn
+    [i|Welcome to #{versionString}, the #{adjectives !! n} λ-calculus interpreter!|]
+  outputStrLn "Type :quit or press C-d to exit."
 
   evalState mempty $ runInputT defaultSettings loop
  where

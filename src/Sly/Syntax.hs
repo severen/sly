@@ -12,6 +12,7 @@ module Sly.Syntax (
   fromChurchBool,
 ) where
 
+import Data.String.Interpolate (i)
 import Data.Text (Text)
 
 import Data.Text qualified as T
@@ -33,7 +34,7 @@ data Statement
 
 instance Show Statement where
   show (Term t) = show t <> "."
-  show (Ass (Name n) t) = T.unpack $ "let " <> n <> " := " <> T.pack (show t) <> "."
+  show (Ass (Name n) t) = T.unpack [i|let #{n} := #{T.pack (show t)}.|]
 
 -- | A λ-term.
 data Term
@@ -51,11 +52,11 @@ instance Show Term where
     go :: Term -> Text
     go (Var (Name n)) = n
     go (Abs (Name n) body) = "λ" <> n <> slurp body
-    go (App l@(Abs _ _) r@(Abs _ _)) = "(" <> go l <> ") " <> "(" <> go r <> ")"
-    go (App l@(Abs _ _) r) = "(" <> go l <> ") " <> go r
-    go (App l r@(Abs _ _)) = go l <> " (" <> go r <> ")"
-    go (App l r@(App _ _)) = go l <> " (" <> go r <> ")"
-    go (App l r) = go l <> " " <> go r
+    go (App l@(Abs _ _) r@(Abs _ _)) = [i|(#{go l}) (#{go r})|]
+    go (App l@(Abs _ _) r) = [i|(#{go l}) #{go r}|]
+    go (App l r@(Abs _ _)) = [i|#{go l} (#{go r})|]
+    go (App l r@(App _ _)) = [i|#{go l} (#{go r})|]
+    go (App l r) = [i|#{go l} #{go r}|]
 
     -- Slurp up λ-abstractions!
     slurp :: Term -> Text
@@ -67,8 +68,8 @@ astShow :: Term -> String
 astShow = T.unpack . go
  where
   go (Var (Name n)) = n
-  go (Abs (Name n) t) = "(λ" <> n <> " -> " <> go t <> ")"
-  go (App l r) = "(" <> go l <> " " <> go r <> ")"
+  go (Abs (Name n) t) = [i|(λ#{n} -> #{go t})|]
+  go (App l r) = [i|(#{go l} #{go r})|]
 
 -- | Convert a nonnegative integer into a Church numeral term.
 toChurchNat :: Int -> Term
