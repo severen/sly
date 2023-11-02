@@ -4,9 +4,4 @@
 packages: sly.cabal
 test-show-details: direct
 
-allow-newer:
-  -- This can be removed after hedgehog-tasty is updated.
-  hedgehog:text,
-  hedgehog:template-haskell
-
 -- vim: ft=cabal
