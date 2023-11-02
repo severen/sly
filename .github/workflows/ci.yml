@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: 2022 Severen Redwood <me@severen.dev>
 # SPDX-License-Identifier: CC0-1.0
 
-# Adapted from https://markkarpov.com/post/github-actions-for-haskell-ci.html.
+# Adapted from https://markkarpov.com/post/github-actions-for-haskell-ci.html,
+# and then later the 'Model cabal workflow with caching' example from
+# haskell-actions/setup.
+
 name: CI
 on:
   push:
@@ -11,38 +14,55 @@ on:
     types:
       - opened
       - synchronize
+
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cabal: ["3.10.1.0"]
-        ghc: ["9.4.7", "9.6.3"]
+        ghc-version: ["9.4.7", "9.6.3"]
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: haskell/actions/setup@v2
-        id: setup-haskell-cabal
+      - uses: actions/checkout@v4
+
+      - name: Set up GHC ${{ matrix.ghc-version }}
+        uses: haskell-actions/setup@v2
+        id: setup
         with:
-          ghc-version: ${{ matrix.ghc }}
-          cabal-version: ${{ matrix.cabal }}
-      - run: cabal update
-      - run: cabal freeze
-      - uses: actions/cache@v3
+          ghc-version: ${{ matrix.ghc-version }}
+
+      - name: Configure the build
+        run: |
+          cabal configure --enable-tests --enable-benchmarks --disable-documentation
+          cabal build --dry-run
+
+      - name: Restore cached dependencies
+        uses: actions/cache/restore@v3
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
         with:
-          path: |
-            ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-            dist-newstyle
-          key: ${{ runner.os }}-${{ matrix.ghc }}-0-${{ hashFiles('cabal.project.freeze') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.ghc }}-0-
-      - run: cabal build
-      - run: cabal test
-      - run: cabal sdist
-      - uses: actions/upload-artifact@v3
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+          restore-keys: ${{ env.key }}-
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cabal build --only-dependencies
+
+      # Cache dependencies here so that we do not have to rebuild them should
+      # the subsequent steps fail.
+      - name: Cache dependencies
+        uses: actions/cache/save@v3
+        # If we had an exact cache hit, trying to save the cache would error
+        # because of key clash.
+        if: steps.cache.outputs.cache-hit != 'true'
         with:
-          name: sdist
-          path: dist-newstyle/sdist/sly-*.tar.gz
-      - uses: actions/upload-artifact@v3
-        with:
-          name: binary
-          path: dist-newstyle/build/**/sly/build/sly/sly
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Build
+        run: cabal build
+
+      - name: Run tests
+        run: cabal test
