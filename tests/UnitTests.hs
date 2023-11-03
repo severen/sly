@@ -8,18 +8,25 @@ import Test.Tasty
 import Test.Tasty.Hspec
 
 import Sly.Eval (hnf, whnf)
-import Sly.Syntax (Name (..), Term (..), fromChurchNat, toChurchNat)
+import Sly.Syntax (
+  Name (..),
+  Term (..),
+  fromChurchNat,
+  toChurchNat,
+  toChurchBool,
+  fromChurchBool,
+ )
 
 unitTests :: IO TestTree
 unitTests = testSpec "Unit Tests" do
   describe "Church Numerals" do
     it "0 == \\f x -> x" do
-      let zero = Abs (Name "f") (Abs (Name "x") (Var $ Name "x"))
+      let zero = Abs (Name "f") $ Abs (Name "x") (Var $ Name "x")
       toChurchNat 0 `shouldBe` zero
       fromChurchNat zero `shouldBe` Just 0
 
     it "1 == \\f x -> f x" do
-      let one = Abs (Name "f") (Abs (Name "x") $ App (Var $ Name "f") (Var $ Name "x"))
+      let one = Abs (Name "f") $ Abs (Name "x") $ App (Var $ Name "f") (Var $ Name "x")
       toChurchNat 1 `shouldBe` one
       fromChurchNat one `shouldBe` Just 1
 
@@ -31,13 +38,24 @@ unitTests = testSpec "Unit Tests" do
       toChurchNat 2 `shouldBe` two
       fromChurchNat two `shouldBe` Just 2
 
+  describe "Church Booleans" do
+    it "#t == \\t f -> t" do
+      let true = Abs (Name "t") $ Abs (Name "f") $ Var (Name "t")
+      toChurchBool True `shouldBe` true
+      fromChurchBool true `shouldBe` Just True
+
+    it "#f == \\t f -> f" do
+      let false = Abs (Name "t") $ Abs (Name "f") $ Var (Name "f")
+      toChurchBool False `shouldBe` false
+      fromChurchBool false `shouldBe` Just False
+
   describe "Evaluator" do
     let x = (Var $ Name "x")
      in do
           it "hnf x == x" $ hnf x `shouldBe` x
           it "whnf x == x" $ whnf x `shouldBe` x
 
-    let f = Abs (Name "x") (App (Var $ Name "x") (Var $ Name "y"))
+    let f = Abs (Name "x") $ App (Var $ Name "x") (Var $ Name "y")
      in do
           it "hnf (\\x -> x y) == \\x -> x y" $ hnf f `shouldBe` f
           it "whnf (\\x -> x y) == \\x -> x y" $ whnf f `shouldBe` f
@@ -48,7 +66,7 @@ unitTests = testSpec "Unit Tests" do
           it "whnf (x y) == x y" $ whnf t `shouldBe` t
 
     let f = Var $ Name "f"
-        g = Abs (Name "x") (App (Var $ Name "f") (Var $ Name "x"))
+        g = Abs (Name "x") $ App (Var $ Name "f") (Var $ Name "x")
         y = Var $ Name "y"
         t = App g y
      in do

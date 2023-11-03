@@ -9,18 +9,25 @@ import Hedgehog.Range qualified as Range
 import Test.Tasty
 import Test.Tasty.Hedgehog
 
-import Sly.Syntax (fromChurchNat, toChurchNat)
+import Sly.Syntax (fromChurchNat, toChurchNat, fromChurchBool, toChurchBool)
 
 propertyTests :: TestTree
 propertyTests =
   fromGroup $
     Group
       "Property Tests"
-      [ ("forall n. (fromChurch . toChurch) n == n", prop_fromChurch_toChurch)
+      [ ("forall n. (fromChurchNat . toChurchNat) n == n", prop_fromChurchNat_toChurchNat)
+      , ("forall b. (fromChurchBool . toChurchBool) b == b", prop_fromChurchBool_toChurchBool)
       ]
 
-prop_fromChurch_toChurch :: Property
-prop_fromChurch_toChurch = property do
-  -- fromChurch is _almost_ a left-identity for toChurch.
+prop_fromChurchNat_toChurchNat :: Property
+prop_fromChurchNat_toChurchNat = property do
+  -- fromChurchNat is _almost_ a left-identity for toChurchNat.
   n <- forAll $ Gen.integral (Range.linear 0 1000)
   (fromChurchNat . toChurchNat) n === Just n
+
+prop_fromChurchBool_toChurchBool :: Property
+prop_fromChurchBool_toChurchBool = property do
+  -- fromChurchBool is _almost_ a left-identity for toChurchBool.
+  b <- forAll Gen.bool
+  (fromChurchBool . toChurchBool) b === Just b
