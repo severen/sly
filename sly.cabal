@@ -6,8 +6,8 @@ cabal-version: 3.4
 name: sly
 version: 0.1.0
 synopsis: An interpreter for the pure untyped λ-calculus.
--- A longer description of the package.
--- description:
+description: Sly is an interpreter for the pure untyped λ-calculus.
+category: LambdaCalculus, Language, Teaching
 author: Severen Redwood
 maintainer: me@severen.dev
 
@@ -19,7 +19,8 @@ homepage: https://github.com/severen/sly
 bug-reports: https://github.com/severen/sly/issues
 tested-with: ghc == {9.4.7, 9.6.3}
 
-extra-source-files: CHANGELOG.md
+extra-source-files: cabal.project
+extra-doc-files: CHANGELOG.md LICENSES/*.txt
 
 source-repository head
   type: git
@@ -82,6 +83,7 @@ library
 executable sly
   import: defaults, deps, exe-deps
   other-modules: Paths_sly
+  autogen-modules: Paths_sly
 
   hs-source-dirs: app
   main-is: Main.hs
