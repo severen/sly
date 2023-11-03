@@ -119,9 +119,7 @@ abstraction = do
   punc "\\" <|> punc "λ"
   binders <- (name <?> "variable") `sepBy1` spaceConsumer
   punc "->" <|> punc "↦"
-  body <- term
-
-  return $ abstract binders body
+  abstract binders <$> term
  where
   -- Expand an abstraction with multiple variables into its internal representation of
   -- nested single-variable abstractions.
