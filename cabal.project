@@ -4,7 +4,4 @@
 packages: sly.cabal
 test-show-details: direct
 
-allow-newer:
-  string-interpolate-0.3.2.1:text
-
 -- vim: ft=cabal
