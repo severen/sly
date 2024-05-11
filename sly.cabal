@@ -1,6 +1,6 @@
 cabal-version: 3.4
 
--- SPDX-FileCopyrightText: 2022 Severen Redwood <me@severen.dev>
+-- SPDX-FileCopyrightText: 2022 Severen Redwood <sev@severen.dev>
 -- SPDX-License-Identifier: CC0-1.0
 
 name: sly
@@ -9,7 +9,7 @@ synopsis: An interpreter for the pure untyped λ-calculus.
 description: Sly is an interpreter for the pure untyped λ-calculus.
 category: LambdaCalculus, Language, Teaching
 author: Severen Redwood
-maintainer: me@severen.dev
+maintainer: sev@severen.dev
 
 license: GPL-3.0-or-later
 license-file: LICENSE

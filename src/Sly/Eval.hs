@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2022 Severen Redwood <me@severen.dev>
+-- SPDX-FileCopyrightText: 2022 Severen Redwood <sev@severen.dev>
 -- SPDX-License-Identifier: GPL-3.0-or-later
 
 module Sly.Eval (
