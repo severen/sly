@@ -17,7 +17,7 @@ copyright: (c) 2022 Severen Redwood
 
 homepage: https://github.com/severen/sly
 bug-reports: https://github.com/severen/sly/issues
-tested-with: ghc == {9.4.7, 9.6.4, 9.8.1}
+tested-with: ghc == {9.4.8, 9.6.5, 9.8.2}
 
 extra-source-files: cabal.project
 extra-doc-files: CHANGELOG.md LICENSES/*.txt
@@ -27,7 +27,7 @@ source-repository head
   location: https://github.com/severen/sly.git
 
 common defaults
-  ghc-options: -W -Wall -fplugin=Effectful.Plugin
+  ghc-options: -W -Wall -Wno-x-partial -fplugin=Effectful.Plugin
   default-language: GHC2021
   default-extensions:
     ApplicativeDo,
