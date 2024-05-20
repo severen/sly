@@ -20,21 +20,21 @@ import Sly.Syntax (
 unitTests :: IO TestTree
 unitTests = testSpec "Unit Tests" do
   describe "Church Numerals" do
-    it "0 == \\f x -> x" do
-      let zero = Abs (Name "f") $ Abs (Name "x") (Var $ Name "x")
+    it "0 == \\s z -> z" do
+      let zero = Abs (Name "s") $ Abs (Name "z") (Var $ Name "z")
       toChurchNat 0 `shouldBe` zero
       fromChurchNat zero `shouldBe` Just 0
 
-    it "1 == \\f x -> f x" do
-      let one = Abs (Name "f") $ Abs (Name "x") $ App (Var $ Name "f") (Var $ Name "x")
+    it "1 == \\s z -> s z" do
+      let one = Abs (Name "s") $ Abs (Name "z") $ App (Var $ Name "s") (Var $ Name "z")
       toChurchNat 1 `shouldBe` one
       fromChurchNat one `shouldBe` Just 1
 
-    it "2 == \\f x -> f (f x)" do
+    it "2 == \\s z -> s (s z)" do
       let two =
-            Abs (Name "f") $
-              Abs (Name "x") $
-                App (Var $ Name "f") (App (Var $ Name "f") (Var $ Name "x"))
+            Abs (Name "s") $
+              Abs (Name "z") $
+                App (Var $ Name "s") (App (Var $ Name "s") (Var $ Name "z"))
       toChurchNat 2 `shouldBe` two
       fromChurchNat two `shouldBe` Just 2
 

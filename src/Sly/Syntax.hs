@@ -74,9 +74,9 @@ astShow = T.unpack . go
 -- | Convert a nonnegative integer into a Church numeral term.
 toChurchNat :: Int -> Term
 toChurchNat n =
-  Abs (Name "f") $
-    Abs (Name "x") $
-      iterate (App (Var $ Name "f")) (Var $ Name "x") !! n
+  Abs (Name "s") $
+    Abs (Name "z") $
+      iterate (App (Var $ Name "s")) (Var $ Name "z") !! n
 
 -- | Convert a term into a nonnegative integer if it has the shape of a Church
 --   numeral.
