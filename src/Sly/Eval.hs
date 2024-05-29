@@ -30,6 +30,7 @@ import Data.Set qualified as Set
 import Data.Text qualified as T
 
 import Sly.Parser
+import Sly.Syntax
 
 -- | Type alias for a map of top-level let bindings.
 type Bindings = Seq (Name, Term)
