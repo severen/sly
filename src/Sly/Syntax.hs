@@ -12,6 +12,7 @@ module Sly.Syntax (
   fromChurchBool,
 ) where
 
+import Data.String (IsString)
 import Data.String.Interpolate (i)
 import Data.Text (Text)
 
@@ -22,7 +23,7 @@ import Data.Text qualified as T
  A name is an identifier that is either used as a variable or an identifier to which an
  arbitrary term is bound.
 -}
-newtype Name = Name Text deriving (Eq, Ord, Show)
+newtype Name = Name Text deriving (Eq, Ord, Show, IsString)
 
 -- | A program statement.
 data Statement
@@ -74,9 +75,9 @@ astShow = T.unpack . go
 -- | Convert a nonnegative integer into a Church numeral term.
 toChurchNat :: Int -> Term
 toChurchNat n =
-  Abs (Name "s") $
-    Abs (Name "z") $
-      iterate (App (Var $ Name "s")) (Var $ Name "z") !! n
+  Abs "s" $
+    Abs "z" $
+      iterate (App (Var "s")) (Var "z") !! n
 
 -- | Convert a term into a nonnegative integer if it has the shape of a Church
 --   numeral.
@@ -92,8 +93,8 @@ fromChurchNat _ = Nothing
 
 -- | Convert a Boolean into a Church Boolean term.
 toChurchBool :: Bool -> Term
-toChurchBool True = Abs (Name "t") $ Abs (Name "f") $ Var (Name "t")
-toChurchBool False = Abs (Name "t") $ Abs (Name "f") $ Var (Name "f")
+toChurchBool True = Abs "t" $ Abs "f" (Var "t")
+toChurchBool False = Abs "t" $ Abs "f" (Var "f")
 
 -- | Convert a term into a Boolean if it has the shape of a Church Boolean.
 fromChurchBool :: Term -> Maybe Bool
