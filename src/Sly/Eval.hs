@@ -1,36 +1,35 @@
 -- SPDX-FileCopyrightText: 2022 Severen Redwood <sev@severen.dev>
 -- SPDX-License-Identifier: GPL-3.0-or-later
 
-module Sly.Eval (
-  Bindings,
-  Program (..),
-  mkProgram,
-  fileToProgram,
-  stringToProgram,
-  runProgram,
-  hnf,
-  whnf,
-  alpha,
-  subst,
-  freeVariables,
-  boundVariables,
-) where
-
-import Data.Foldable (foldr')
-import Data.Sequence (Seq)
-import Data.Set (Set, (\\))
-import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8)
-import Data.Void (Void)
-import Text.Megaparsec (ParseErrorBundle)
+module Sly.Eval
+  ( Bindings,
+    Program (..),
+    mkProgram,
+    fileToProgram,
+    stringToProgram,
+    runProgram,
+    hnf,
+    whnf,
+    alpha,
+    subst,
+    freeVariables,
+    boundVariables,
+  )
+where
 
 import Data.ByteString qualified as BS
+import Data.Foldable (foldr')
+import Data.Sequence (Seq)
 import Data.Sequence qualified as Seq
+import Data.Set (Set, (\\))
 import Data.Set qualified as Set
+import Data.Text (Text)
 import Data.Text qualified as T
-
+import Data.Text.Encoding (decodeUtf8)
+import Data.Void (Void)
 import Sly.Parser
 import Sly.Syntax
+import Text.Megaparsec (ParseErrorBundle)
 
 -- | Type alias for a map of top-level let bindings.
 type Bindings = Seq (Name, Term)
@@ -41,15 +40,15 @@ data Program = Program {bindings :: Bindings, terms :: [Term]}
 -- | Create a program from a list of statements.
 mkProgram :: [Statement] -> Program
 mkProgram statements =
-  Program{bindings = extractBindings statements, terms = extractTerms statements}
- where
-  extractBindings =
-    Seq.fromList
-      . map (\case (Ass n t) -> (n, t); _ -> error "Unreachable!")
-      . filter (\case Term _ -> False; Ass _ _ -> True)
-  extractTerms =
-    map (\case (Term t) -> t; _ -> error "Unreachable!")
-      . filter (\case Term _ -> True; Ass _ _ -> False)
+  Program {bindings = extractBindings statements, terms = extractTerms statements}
+  where
+    extractBindings =
+      Seq.fromList
+        . map (\case (Ass n t) -> (n, t); _ -> error "Unreachable!")
+        . filter (\case Term _ -> False; Ass _ _ -> True)
+    extractTerms =
+      map (\case (Term t) -> t; _ -> error "Unreachable!")
+        . filter (\case Term _ -> True; Ass _ _ -> False)
 
 -- | Load a program from a file.
 fileToProgram :: FilePath -> IO (Either (ParseErrorBundle Text Void) Program)
@@ -70,11 +69,11 @@ stringToProgram s =
 -- | Run a program.
 runProgram :: Program -> [Term]
 runProgram program = map (hnf . applyBindings program.bindings) program.terms
- where
-  -- TODO: Implement bindings without this caveat!
-  -- NOTE: The use of foldr is to ensure that bindings are applied in a way that allows
-  --       them to depend on earlier bindings defined in an interactive session or file.
-  applyBindings = flip $ foldr' \(k, v) t -> App (Abs k t) v
+  where
+    -- TODO: Implement bindings without this caveat!
+    -- NOTE: The use of foldr is to ensure that bindings are applied in a way that allows
+    --       them to depend on earlier bindings defined in an interactive session or file.
+    applyBindings = flip $ foldr' \(k, v) t -> App (Abs k t) v
 
 -- | Reduce a term to head normal form.
 hnf :: Term -> Term
@@ -101,23 +100,23 @@ alpha x y t = case t of
 -- s.
 subst :: Name -> Term -> Term -> Term
 subst x s = go
- where
-  go v@(Var y)
-    | x == y = s
-    | otherwise = v
-  go f@(Abs y body)
-    | x == y = f
-    | y `Set.notMember` fvs = Abs y (go body)
-    | otherwise =
-      -- At this point, we must avoid variable capture. So...
-      let z = chooseName y (Set.singleton y <> freeVariables body) -- pick a new name,
-          u = alpha y z f -- α-convert,
-       in go u -- and continue!
-  go (App t1 t2) = App (go t1) (go t2)
+  where
+    go v@(Var y)
+      | x == y = s
+      | otherwise = v
+    go f@(Abs y body)
+      | x == y = f
+      | y `Set.notMember` fvs = Abs y (go body)
+      | otherwise =
+          -- At this point, we must avoid variable capture. So...
+          let z = chooseName y (Set.singleton y <> freeVariables body) -- pick a new name,
+              u = alpha y z f -- α-convert,
+           in go u -- and continue!
+    go (App t1 t2) = App (go t1) (go t2)
 
-  fvs = freeVariables s
-  chooseName (Name n) ys =
-    head $ filter (`Set.notMember` ys) $ Name . (n <>) <$> iterate (<> "'") T.empty
+    fvs = freeVariables s
+    chooseName (Name n) ys =
+      head $ filter (`Set.notMember` ys) $ Name . (n <>) <$> iterate (<> "'") T.empty
 
 -- | Determine whether a variable is free in a given term.
 freeIn :: Name -> Term -> Bool

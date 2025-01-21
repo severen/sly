@@ -3,9 +3,8 @@
 
 module Main where
 
-import Test.Tasty
-
 import PropertyTests
+import Test.Tasty
 import UnitTests
 
 main :: IO ()

@@ -6,18 +6,17 @@ module PropertyTests (propertyTests) where
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
+import Sly.Syntax (fromChurchBool, fromChurchNat, toChurchBool, toChurchNat)
 import Test.Tasty
 import Test.Tasty.Hedgehog
-
-import Sly.Syntax (fromChurchNat, toChurchNat, fromChurchBool, toChurchBool)
 
 propertyTests :: TestTree
 propertyTests =
   fromGroup $
     Group
       "Property Tests"
-      [ ("forall n. (fromChurchNat . toChurchNat) n == n", prop_fromChurchNat_toChurchNat)
-      , ("forall b. (fromChurchBool . toChurchBool) b == b", prop_fromChurchBool_toChurchBool)
+      [ ("forall n. (fromChurchNat . toChurchNat) n == n", prop_fromChurchNat_toChurchNat),
+        ("forall b. (fromChurchBool . toChurchBool) b == b", prop_fromChurchBool_toChurchBool)
       ]
 
 prop_fromChurchNat_toChurchNat :: Property
