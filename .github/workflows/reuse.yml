@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2025 Severen Redwood <sev@severen.dev>
+# SPDX-License-Identifier: CC0-1.0
+
+name: REUSE Compliance Check
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: reuse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reuse-compliance-check:
+    name: "Check that project files are REUSE compliant"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v5
