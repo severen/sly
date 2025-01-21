@@ -1,24 +1,26 @@
-# SPDX-FileCopyrightText: 2022 Severen Redwood <sev@severen.dev>
+# SPDX-FileCopyrightText: 2025 Severen Redwood <sev@severen.dev>
 # SPDX-License-Identifier: CC0-1.0
-
-# Adapted from https://markkarpov.com/post/github-actions-for-haskell-ci.html,
-# and then later the 'Model cabal workflow with caching' example from
-# haskell-actions/setup.
 
 name: CI
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
-    types:
-      - opened
-      - synchronize
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: Build and test with GHC ${{ matrix.ghc-version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         ghc-version: ["9.4.8", "9.6.5", "9.8.2"]
 
@@ -48,21 +50,24 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: cabal build --only-dependencies
+        run: cabal build all --only-dependencies
 
       # Cache dependencies here so that we do not have to rebuild them should
       # the subsequent steps fail.
       - name: Cache dependencies
         uses: actions/cache/save@v4
-        # If we had an exact cache hit, trying to save the cache would error
-        # because of key clash.
+        # If we had an exact cache hit, trying to save the cache will error
+        # because of a key clash.
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           path: ${{ steps.setup.outputs.cabal-store }}
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Build
-        run: cabal build
+        run: cabal build all
 
       - name: Run tests
-        run: cabal test
+        run: cabal test all
+
+      - name: Check Cabal file
+        run: cabal check
