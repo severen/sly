@@ -16,9 +16,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-formatting:
+    name: Check formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check formatting of Haskell source code with Ormolu
+        uses: haskell-actions/run-ormolu@v16
+
   build:
     name: Build and test with GHC ${{ matrix.ghc-version }}
     runs-on: ubuntu-latest
+    needs: check-formatting
     strategy:
       fail-fast: false
       matrix:

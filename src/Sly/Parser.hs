@@ -5,16 +5,14 @@ module Sly.Parser (parse) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Foldable (foldr')
-import Data.Functor (($>), void)
+import Data.Functor (void, ($>))
 import Data.Text (Text)
+import Data.Text qualified as T
 import Data.Void (Void)
-import Text.Megaparsec hiding (Token, parse)
-import Unicode.Char.Identifiers (isPatternWhitespace, isXIDContinue, isXIDStart)
-
 import Sly.Syntax
-
-import qualified Data.Text as T
-import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec hiding (Token, parse)
+import Text.Megaparsec.Char.Lexer qualified as L
+import Unicode.Char.Identifiers (isPatternWhitespace, isXIDContinue, isXIDStart)
 
 {- Grammar Notes
   * Application is parsed with the highest precedence and associativity to the
@@ -80,13 +78,13 @@ nameContinue = many $ satisfy \c -> isXIDContinue c || c == '\''
 -- | Parse a name according to the Unicode Standard Annex #31.
 name :: Parser Name
 name = Name <$> (lexeme word >>= check) <?> "name"
- where
-  word = T.pack <$> ((:) <$> nameStart <*> nameContinue)
-  check w
-    | w `notElem` keywords = return w
-    -- TODO: See if the positioning of this error message (when output) can be
-    -- improved.
-    | otherwise = fail $ "keyword " <> T.unpack w <> " cannot be a name"
+  where
+    word = T.pack <$> ((:) <$> nameStart <*> nameContinue)
+    check w
+      | w `notElem` keywords = return w
+      -- TODO: See if the positioning of this error message (when output) can be
+      -- improved.
+      | otherwise = fail $ "keyword " <> T.unpack w <> " cannot be a name"
 
 -- | Parse a variable term.
 variable :: Parser Term
@@ -95,18 +93,18 @@ variable = Var <$> name
 -- | Parse a natural number literal.
 natural :: Parser Term
 natural = toChurchNat <$> (lexeme L.decimal >>= check)
- where
-  check n
-    | n <= toInteger maxInt = return (fromInteger n)
-    | otherwise = fail $ "naturals larger than " <> show maxInt <> " are disallowed"
-  maxInt = maxBound @Int
+  where
+    check n
+      | n <= toInteger maxInt = return (fromInteger n)
+      | otherwise = fail $ "naturals larger than " <> show maxInt <> " are disallowed"
+    maxInt = maxBound @Int
 
 -- | Parse a Boolean literal.
 boolean :: Parser Term
 boolean = toChurchBool <$> (single '#' *> (try true <|> false))
- where
-  true = (symbol "true" <|> symbol "t") $> True
-  false = (symbol "false" <|> symbol "f") $> False
+  where
+    true = (symbol "true" <|> symbol "t") $> True
+    false = (symbol "false" <|> symbol "f") $> False
 
 -- | Parse a λ-abstraction.
 abstraction :: Parser Term
@@ -115,10 +113,10 @@ abstraction = do
   binders <- name `sepBy1` spaceConsumer
   punc "->" <|> punc "↦" <?> "->"
   abstract binders <$> term
- where
-  -- Expand an abstraction with multiple variables into its internal representation of
-  -- nested single-variable abstractions.
-  abstract = flip (foldr' Abs)
+  where
+    -- Expand an abstraction with multiple variables into its internal representation of
+    -- nested single-variable abstractions.
+    abstract = flip (foldr' Abs)
 
 -- | Parse an application term.
 application :: Parser (Term -> Term -> Term)
@@ -145,10 +143,10 @@ let_ = do
 -- | Parse a λ-term.
 term :: Parser Term
 term = makeExprParser (choice indivisibles) operatorTable
- where
-  operatorTable = [[InfixL application]]
-  indivisibles =
-    [try variable, natural, boolean, abstraction, let_, brackets term]
+  where
+    operatorTable = [[InfixL application]]
+    indivisibles =
+      [try variable, natural, boolean, abstraction, let_, brackets term]
 
 -- | Parse an assignment statement.
 assignment :: Parser Statement
@@ -169,10 +167,9 @@ statement = try assignment <|> termS
 eos :: Parser ()
 eos = punc "."
 
-{- | Parse a complete program file.
-
-  We define 'program' in this context to be a sequence of bindings and/or terms.
--}
+-- | Parse a complete program file.
+--
+--  We define 'program' in this context to be a sequence of bindings and/or terms.
 program :: Parser [Statement]
 program = spaceConsumer *> statement `endBy` eos <* eof
 

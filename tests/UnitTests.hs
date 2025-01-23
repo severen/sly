@@ -3,18 +3,17 @@
 
 module UnitTests (unitTests) where
 
+import Sly.Eval (hnf, whnf)
+import Sly.Syntax
+  ( Term (..),
+    fromChurchBool,
+    fromChurchNat,
+    toChurchBool,
+    toChurchNat,
+  )
 import Test.Hspec
 import Test.Tasty
 import Test.Tasty.Hspec
-
-import Sly.Eval (hnf, whnf)
-import Sly.Syntax (
-  Term (..),
-  fromChurchNat,
-  toChurchNat,
-  toChurchBool,
-  fromChurchBool,
- )
 
 unitTests :: IO TestTree
 unitTests = testSpec "Unit Tests" do
