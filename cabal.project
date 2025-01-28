@@ -4,4 +4,8 @@
 packages: sly.cabal
 test-show-details: direct
 
+allow-newer:
+  hedgehog-1.5:random,
+  QuickCheck-2.15.0.1:random,
+
 -- vim: ft=cabal
