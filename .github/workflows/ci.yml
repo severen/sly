@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check formatting of Haskell source code with Ormolu
-        uses: haskell-actions/run-ormolu@v16
+        uses: haskell-actions/run-ormolu@v17
 
   lint:
     name: Lint
