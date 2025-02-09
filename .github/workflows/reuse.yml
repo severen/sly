@@ -4,9 +4,12 @@
 name: REUSE
 on:
   push:
-    branches: [master]
+    branches: ["**"]
   pull_request:
     branches: [master]
+
+permissions:
+  contents: read
 
 concurrency:
   group: reuse-${{ github.ref }}
