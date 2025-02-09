@@ -96,7 +96,7 @@ alpha x y t = case t of
     | otherwise -> Abs z (alpha x y body)
   App t1 t2 -> App (alpha x y t1) (alpha x y t2)
 
--- | Replace all free occurences of the variable x in a term t with the term
+-- | Replace all free occurrences of the variable x in a term t with the term
 -- s.
 subst :: Name -> Term -> Term -> Term
 subst x s = go
