@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check formatting of Haskell source code with Ormolu
         uses: haskell-actions/run-ormolu@v17
@@ -32,7 +32,7 @@ jobs:
     needs: check-formatting
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up HLint
         uses: haskell-actions/hlint-setup@v2
@@ -55,7 +55,7 @@ jobs:
         ghc-version: ["9.6.6", "9.8.2", "9.10.1"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up GHC ${{ matrix.ghc-version }}
         uses: haskell-actions/setup@v2
