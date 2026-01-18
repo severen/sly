@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc-version: ["9.6.6", "9.8.2", "9.10.1"]
+        ghc-version: ["9.8.4", "9.10.1", "9.12.2"]
 
     steps:
       - uses: actions/checkout@v6
